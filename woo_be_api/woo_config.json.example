@@ -1,0 +1,13 @@
+{
+  "active": "Store Name",
+  "stores": {
+    "Store Name": {
+      "store_url": "https://example.com",
+      "consumer_key": "ck_...",
+      "consumer_secret": "cs_...",
+      "wp_username": "user",
+      "wp_app_password": "xxxx xxxx xxxx xxxx xxxx xxxx"
+    }
+  }
+}
+

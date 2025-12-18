@@ -1,0 +1,27 @@
+import { PageHeader } from "../components/app/PageHeader"
+import { useTranslation } from "react-i18next"
+import { CSVImport } from "../components/CSVImport"
+import { useStore } from "../state/storeContext"
+import { useJobManager } from "../state/jobManager"
+
+export function ImportCSV() {
+  const { t } = useTranslation()
+  const { selectedStoreId } = useStore()
+  const { addJob, openDrawer } = useJobManager()
+
+  return (
+    <div>
+      <PageHeader title={t("pages.importCsv.title")} />
+      <CSVImport
+        storeId={selectedStoreId}
+        onCreateJob={(jobId) => {
+          if (selectedStoreId) {
+            addJob(jobId, selectedStoreId)
+            openDrawer()
+          }
+        }}
+      />
+    </div>
+  )
+}
+

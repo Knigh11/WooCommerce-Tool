@@ -1,0 +1,225 @@
+{
+  "nav": {
+    "dashboard": "Bảng điều khiển",
+    "single": "Sản phẩm đơn",
+    "updatePrices": "Cập nhật giá",
+    "bulkFields": "Cập nhật hàng loạt",
+    "delete": "Xóa sản phẩm",
+    "importCsv": "Import CSV",
+    "categories": "Danh mục",
+    "reviews": "Đánh giá",
+    "jobs": "Công việc",
+    "settings": "Cài đặt"
+  },
+  "common": {
+    "createJob": "Tạo công việc",
+    "cancel": "Hủy",
+    "save": "Lưu",
+    "reset": "Đặt lại",
+    "saveAndNext": "Lưu & Tiếp theo",
+    "fetch": "Lấy dữ liệu",
+    "loading": "Đang tải...",
+    "submit": "Gửi",
+    "close": "Đóng",
+    "delete": "Xóa",
+    "edit": "Chỉnh sửa",
+    "add": "Thêm",
+    "remove": "Xóa",
+    "search": "Tìm kiếm",
+    "filter": "Lọc",
+    "clear": "Xóa",
+    "select": "Chọn",
+    "all": "Tất cả",
+    "none": "Không có",
+    "yes": "Có",
+    "no": "Không",
+    "confirm": "Xác nhận",
+    "back": "Quay lại",
+    "next": "Tiếp theo",
+    "previous": "Trước",
+    "view": "Xem"
+  },
+  "pages": {
+    "dashboard": {
+      "title": "Bảng điều khiển",
+      "recentJobs": "Công việc gần đây",
+      "quickActions": "Thao tác nhanh",
+      "metrics": "Số liệu"
+    },
+    "single": {
+      "title": "Chỉnh sửa sản phẩm",
+      "urlInput": "URL hoặc ID sản phẩm",
+      "fetchProduct": "Lấy sản phẩm",
+      "basics": "Cơ bản",
+      "content": "Nội dung",
+      "images": "Hình ảnh",
+      "variations": "Biến thể"
+    },
+    "updatePrices": {
+      "title": "Cập nhật giá",
+      "scope": "Phạm vi",
+      "rule": "Quy tắc giá",
+      "options": "Tùy chọn",
+      "review": "Xem lại"
+    },
+    "bulkFields": {
+      "title": "Cập nhật hàng loạt",
+      "scope": "Phạm vi",
+      "fields": "Trường cập nhật",
+      "options": "Tùy chọn",
+      "review": "Xem lại"
+    },
+    "delete": {
+      "title": "Xóa sản phẩm",
+      "scope": "Phạm vi",
+      "options": "Tùy chọn",
+      "review": "Xem lại"
+    },
+    "importCsv": {
+      "title": "Import CSV",
+      "uploadFile": "Tải lên file CSV"
+    },
+    "categories": {
+      "title": "Danh mục",
+      "manageCategories": "Quản lý danh mục"
+    },
+    "reviews": {
+      "title": "Đánh giá",
+      "manageReviews": "Quản lý đánh giá"
+    },
+    "jobs": {
+      "title": "Công việc",
+      "allJobs": "Tất cả công việc",
+      "activeJobs": "Công việc đang chạy",
+      "completedJobs": "Công việc hoàn thành"
+    },
+    "settings": {
+      "title": "Cài đặt",
+      "apiConfig": "Cấu hình API",
+      "storeConfig": "Cấu hình cửa hàng"
+    }
+  },
+  "forms": {
+    "storeSelector": {
+      "label": "Chọn cửa hàng",
+      "placeholder": "-- Chọn cửa hàng --"
+    },
+    "category": {
+      "label": "Danh mục",
+      "allCategories": "Tất cả danh mục"
+    },
+    "adjustmentType": {
+      "label": "Thao tác",
+      "increase": "Tăng",
+      "decrease": "Giảm"
+    },
+    "adjustmentMode": {
+      "label": "Loại",
+      "percent": "Phần trăm",
+      "fixed": "Số tiền cố định"
+    },
+    "adjustmentValue": {
+      "label": "Giá trị"
+    },
+    "batchSize": {
+      "label": "Kích thước lô"
+    },
+    "maxRetries": {
+      "label": "Số lần thử tối đa"
+    },
+    "rateLimitRps": {
+      "label": "Giới hạn tốc độ (RPS)"
+    },
+    "delayBetweenBatches": {
+      "label": "Độ trễ giữa các lô (giây)"
+    },
+    "dryRun": {
+      "label": "Chạy thử"
+    },
+    "applyToVariations": {
+      "label": "Áp dụng cho biến thể"
+    },
+    "productUrls": {
+      "label": "URL sản phẩm",
+      "placeholder": "Nhập URL, mỗi dòng một URL hoặc phân cách bằng dấu phẩy"
+    },
+    "productIds": {
+      "label": "ID sản phẩm",
+      "placeholder": "Nhập ID, mỗi dòng một ID hoặc phân cách bằng dấu phẩy"
+    },
+    "titlePrefix": {
+      "label": "Tiền tố tiêu đề"
+    },
+    "titleSuffix": {
+      "label": "Hậu tố tiêu đề"
+    },
+    "shortDescription": {
+      "label": "Mô tả ngắn"
+    },
+    "description": {
+      "label": "Mô tả"
+    }
+  },
+  "job": {
+    "status": {
+      "queued": "Đang chờ",
+      "running": "Đang chạy",
+      "done": "Hoàn thành",
+      "failed": "Thất bại",
+      "cancelled": "Đã hủy"
+    },
+    "metrics": {
+      "success": "Thành công",
+      "failed": "Thất bại",
+      "retried": "Đã thử lại",
+      "skipped": "Đã bỏ qua"
+    },
+    "progress": "Tiến trình",
+    "current": "Hiện tại",
+    "logs": "Nhật ký",
+    "pause": "Tạm dừng",
+    "resume": "Tiếp tục",
+    "stop": "Dừng",
+    "cancel": "Hủy",
+    "sseConnected": "SSE Đã kết nối",
+    "sseConnecting": "SSE Đang kết nối...",
+    "sseError": "Lỗi SSE",
+    "usingPolling": "Đang dùng Polling",
+    "eventsPerMinute": "sự kiện/phút",
+    "created": "Đã tạo công việc",
+    "autoScroll": "Tự động cuộn",
+    "copyLogs": "Sao chép nhật ký",
+    "clearView": "Xóa màn hình"
+  },
+  "errors": {
+    "required": "Trường này là bắt buộc",
+    "invalidNumber": "Vui lòng nhập số hợp lệ",
+    "invalidUrl": "Vui lòng nhập URL hợp lệ",
+    "invalidId": "Vui lòng nhập ID hợp lệ",
+    "selectStore": "Vui lòng chọn cửa hàng trước",
+    "networkError": "Lỗi mạng",
+    "apiError": "Lỗi API",
+    "unknownError": "Đã xảy ra lỗi không xác định"
+  },
+  "topBar": {
+    "quickJump": {
+      "placeholder": "URL hoặc ID sản phẩm...",
+      "label": "Tìm nhanh"
+    },
+    "theme": {
+      "light": "Sáng",
+      "dark": "Tối",
+      "system": "Hệ thống"
+    },
+    "language": {
+      "en": "English",
+      "vi": "Tiếng Việt"
+    },
+    "jobs": "Công việc"
+  },
+  "sidebar": {
+    "collapse": "Thu gọn",
+    "expand": "Mở rộng"
+  }
+}
+

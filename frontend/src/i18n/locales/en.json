@@ -1,0 +1,225 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "single": "Single Product",
+    "updatePrices": "Update Prices",
+    "bulkFields": "Bulk Fields",
+    "delete": "Delete Products",
+    "importCsv": "Import CSV",
+    "categories": "Categories",
+    "reviews": "Reviews",
+    "jobs": "Jobs",
+    "settings": "Settings"
+  },
+  "common": {
+    "createJob": "Create Job",
+    "cancel": "Cancel",
+    "save": "Save",
+    "reset": "Reset",
+    "saveAndNext": "Save & Next",
+    "fetch": "Fetch",
+    "loading": "Loading...",
+    "submit": "Submit",
+    "close": "Close",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "remove": "Remove",
+    "search": "Search",
+    "filter": "Filter",
+    "clear": "Clear",
+    "select": "Select",
+    "all": "All",
+    "none": "None",
+    "yes": "Yes",
+    "no": "No",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "view": "View"
+  },
+  "pages": {
+    "dashboard": {
+      "title": "Dashboard",
+      "recentJobs": "Recent Jobs",
+      "quickActions": "Quick Actions",
+      "metrics": "Metrics"
+    },
+    "single": {
+      "title": "Single Product Editor",
+      "urlInput": "Product URL or ID",
+      "fetchProduct": "Fetch Product",
+      "basics": "Basics",
+      "content": "Content",
+      "images": "Images",
+      "variations": "Variations"
+    },
+    "updatePrices": {
+      "title": "Update Prices",
+      "scope": "Scope",
+      "rule": "Price Rule",
+      "options": "Options",
+      "review": "Review"
+    },
+    "bulkFields": {
+      "title": "Bulk Update Fields",
+      "scope": "Scope",
+      "fields": "Fields to Update",
+      "options": "Options",
+      "review": "Review"
+    },
+    "delete": {
+      "title": "Delete Products",
+      "scope": "Scope",
+      "options": "Options",
+      "review": "Review"
+    },
+    "importCsv": {
+      "title": "Import CSV",
+      "uploadFile": "Upload CSV File"
+    },
+    "categories": {
+      "title": "Categories",
+      "manageCategories": "Manage Categories"
+    },
+    "reviews": {
+      "title": "Reviews",
+      "manageReviews": "Manage Reviews"
+    },
+    "jobs": {
+      "title": "Jobs",
+      "allJobs": "All Jobs",
+      "activeJobs": "Active Jobs",
+      "completedJobs": "Completed Jobs"
+    },
+    "settings": {
+      "title": "Settings",
+      "apiConfig": "API Configuration",
+      "storeConfig": "Store Configuration"
+    }
+  },
+  "forms": {
+    "storeSelector": {
+      "label": "Select Store",
+      "placeholder": "-- Select a store --"
+    },
+    "category": {
+      "label": "Category",
+      "allCategories": "All Categories"
+    },
+    "adjustmentType": {
+      "label": "Operation",
+      "increase": "Increase",
+      "decrease": "Decrease"
+    },
+    "adjustmentMode": {
+      "label": "Type",
+      "percent": "Percent",
+      "fixed": "Fixed Amount"
+    },
+    "adjustmentValue": {
+      "label": "Value"
+    },
+    "batchSize": {
+      "label": "Batch Size"
+    },
+    "maxRetries": {
+      "label": "Max Retries"
+    },
+    "rateLimitRps": {
+      "label": "Rate Limit (RPS)"
+    },
+    "delayBetweenBatches": {
+      "label": "Delay Between Batches (seconds)"
+    },
+    "dryRun": {
+      "label": "Dry Run"
+    },
+    "applyToVariations": {
+      "label": "Apply to Variations"
+    },
+    "productUrls": {
+      "label": "Product URLs",
+      "placeholder": "Enter URLs, one per line or comma-separated"
+    },
+    "productIds": {
+      "label": "Product IDs",
+      "placeholder": "Enter IDs, one per line or comma-separated"
+    },
+    "titlePrefix": {
+      "label": "Title Prefix"
+    },
+    "titleSuffix": {
+      "label": "Title Suffix"
+    },
+    "shortDescription": {
+      "label": "Short Description"
+    },
+    "description": {
+      "label": "Description"
+    }
+  },
+  "job": {
+    "status": {
+      "queued": "Queued",
+      "running": "Running",
+      "done": "Done",
+      "failed": "Failed",
+      "cancelled": "Cancelled"
+    },
+    "metrics": {
+      "success": "Success",
+      "failed": "Failed",
+      "retried": "Retried",
+      "skipped": "Skipped"
+    },
+    "progress": "Progress",
+    "current": "Current",
+    "logs": "Logs",
+    "pause": "Pause",
+    "resume": "Resume",
+    "stop": "Stop",
+    "cancel": "Cancel",
+    "sseConnected": "SSE Connected",
+    "sseConnecting": "SSE Connecting...",
+    "sseError": "SSE Error",
+    "usingPolling": "Using Polling Fallback",
+    "eventsPerMinute": "events/min",
+    "created": "Job created",
+    "autoScroll": "Auto Scroll",
+    "copyLogs": "Copy Logs",
+    "clearView": "Clear View"
+  },
+  "errors": {
+    "required": "This field is required",
+    "invalidNumber": "Please enter a valid number",
+    "invalidUrl": "Please enter a valid URL",
+    "invalidId": "Please enter a valid ID",
+    "selectStore": "Please select a store first",
+    "networkError": "Network error",
+    "apiError": "API error",
+    "unknownError": "An unknown error occurred"
+  },
+  "topBar": {
+    "quickJump": {
+      "placeholder": "Product URL or ID...",
+      "label": "Quick Jump"
+    },
+    "theme": {
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
+    "language": {
+      "en": "English",
+      "vi": "Tiếng Việt"
+    },
+    "jobs": "Jobs"
+  },
+  "sidebar": {
+    "collapse": "Collapse",
+    "expand": "Expand"
+  }
+}
+

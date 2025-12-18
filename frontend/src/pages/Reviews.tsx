@@ -1,0 +1,27 @@
+import { PageHeader } from "../components/app/PageHeader"
+import { useTranslation } from "react-i18next"
+import { Reviews as ReviewsComponent } from "../components/Reviews"
+import { useStore } from "../state/storeContext"
+import { useJobManager } from "../state/jobManager"
+
+export function Reviews() {
+  const { t } = useTranslation()
+  const { selectedStoreId } = useStore()
+  const { addJob, openDrawer } = useJobManager()
+
+  return (
+    <div>
+      <PageHeader title={t("pages.reviews.title")} />
+      <ReviewsComponent
+        storeId={selectedStoreId}
+        onCreateJob={(jobId) => {
+          if (selectedStoreId) {
+            addJob(jobId, selectedStoreId)
+            openDrawer()
+          }
+        }}
+      />
+    </div>
+  )
+}
+
