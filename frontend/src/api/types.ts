@@ -1,6 +1,7 @@
 // API Types - Matching new BE schema
 
 export interface StoreSummary {
+  is_active: any;
   id: string;
   name: string;
   store_url: string;

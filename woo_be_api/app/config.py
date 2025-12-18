@@ -179,6 +179,40 @@ def set_active_store(store_name: str, config_path: Optional[str] = None) -> None
     save_stores_config(config, config_path)
 
 
+def validate_store_config(config: Dict) -> tuple[bool, str]:
+    """
+    Validate store configuration (giống desktop app validate_config).
+    
+    Args:
+        config: Store config dict with store_url, consumer_key, consumer_secret, etc.
+    
+    Returns:
+        Tuple of (is_valid, error_message)
+    """
+    if not config:
+        return False, "Config không tồn tại"
+    
+    required_fields = ["store_url", "consumer_key", "consumer_secret"]
+    
+    for field in required_fields:
+        if field not in config:
+            return False, f"Thiếu trường bắt buộc: {field}"
+        
+        if not config[field] or not isinstance(config[field], str):
+            return False, f"Trường {field} không hợp lệ"
+    
+    # Validate URL format
+    store_url = config["store_url"].strip()
+    if not store_url.startswith(("http://", "https://")):
+        return False, "store_url phải bắt đầu bằng http:// hoặc https://"
+    
+    # Remove trailing slash (modify in place)
+    if store_url.endswith("/"):
+        config["store_url"] = store_url.rstrip("/")
+    
+    return True, ""
+
+
 def get_settings() -> Settings:
     """Get application settings."""
     return _settings

@@ -11,7 +11,8 @@ from app.config import (
     save_stores_config, 
     load_stores_config,
     get_active_store,
-    set_active_store
+    set_active_store,
+    validate_store_config
 )
 from app.schemas.stores import (
     StoreSummary, 
@@ -151,13 +152,6 @@ async def create_store(request: StoreCreateRequest):
                 detail=f"Store with name '{request.name}' already exists"
             )
         
-        # Validate required fields
-        if not request.store_url or not request.consumer_key or not request.consumer_secret:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="store_url, consumer_key, and consumer_secret are required"
-            )
-        
         # Create store config
         store_config = {
             "store_url": request.store_url.strip(),
@@ -169,6 +163,14 @@ async def create_store(request: StoreCreateRequest):
             store_config["wp_username"] = request.wp_username.strip()
         if request.wp_app_password:
             store_config["wp_app_password"] = request.wp_app_password.strip()
+        
+        # Validate config (giống desktop app)
+        is_valid, err_msg = validate_store_config(store_config)
+        if not is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Config không hợp lệ: {err_msg}"
+            )
         
         # Add to stores
         stores[request.name] = store_config
@@ -262,6 +264,14 @@ async def update_store(store_id: str, request: StoreUpdateRequest):
             else:
                 store_config.pop("wp_app_password", None)
         
+        # Validate config (giống desktop app)
+        is_valid, err_msg = validate_store_config(store_config)
+        if not is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Config không hợp lệ: {err_msg}"
+            )
+        
         # Update stores dict
         stores[store_name] = store_config
         config["stores"] = stores
@@ -316,8 +326,13 @@ async def delete_store(store_id: str):
         # Check if this is the active store
         active_store = config.get("active")
         if active_store == store_name:
-            # Clear active store if deleting the active one
-            config["active"] = ""
+            # Nếu xóa active store, chọn store đầu tiên làm active (giống desktop app)
+            remaining_stores = [name for name in stores.keys() if name != store_name]
+            if remaining_stores:
+                config["active"] = remaining_stores[0]
+            else:
+                # Không còn store nào, clear active
+                config["active"] = ""
         
         # Remove store
         del stores[store_name]

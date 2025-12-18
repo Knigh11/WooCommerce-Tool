@@ -1,6 +1,7 @@
-import { PageHeader } from "../components/app/PageHeader"
 import { useTranslation } from "react-i18next"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card"
+import { PageHeader } from "../components/app/PageHeader"
+import { StoreManager } from "../components/StoreManager"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
 import { useStore } from "../state/storeContext"
 
 const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'http://127.0.0.1:8000'
@@ -16,6 +17,12 @@ export function Settings() {
       <PageHeader title={t("pages.settings.title")} />
 
       <div className="space-y-6">
+        {/* Store Manager - Quản lý cấu hình stores */}
+        <StoreManager onStoreChange={() => {
+          // Reload stores when store changes
+          window.location.reload();
+        }} />
+
         <Card>
           <CardHeader>
             <CardTitle>{t("pages.settings.apiConfig")}</CardTitle>

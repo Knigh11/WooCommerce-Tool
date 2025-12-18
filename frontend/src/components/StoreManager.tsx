@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { apiFetch } from '../api/client';
 import { endpoints } from '../api/endpoints';
-import { StoreSummary, StoreDetail, StoreCreateRequest, StoreUpdateRequest } from '../api/types';
+import { StoreCreateRequest, StoreDetail, StoreSummary, StoreUpdateRequest } from '../api/types';
 
 interface StoreManagerProps {
   onStoreChange?: () => void;
@@ -12,8 +12,9 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  
+
   // Form state
+  const [selectedProfileName, setSelectedProfileName] = useState<string>('');
   const [editingStore, setEditingStore] = useState<StoreDetail | null>(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -31,7 +32,7 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
       setLoading(true);
       setError(null);
       const { data } = await apiFetch<StoreSummary[]>(endpoints.stores());
-      
+
       // Load active status for each store
       const storesWithActive = await Promise.all(
         data.map(async (store) => {
@@ -43,8 +44,18 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
           }
         })
       );
-      
+
       setStores(storesWithActive as any);
+
+      // Nếu chưa có profile được chọn, chọn active store hoặc store đầu tiên
+      if (!selectedProfileName && storesWithActive.length > 0) {
+        const activeStore = storesWithActive.find((s: any) => s.is_active);
+        if (activeStore) {
+          handleProfileSelected(activeStore.name);
+        } else {
+          handleProfileSelected(storesWithActive[0].name);
+        }
+      }
     } catch (err: any) {
       setError(`Failed to load stores: ${err.message}`);
     } finally {
@@ -68,15 +79,38 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
       set_as_active: false,
     });
     setEditingStore(null);
+    setSelectedProfileName('');
   };
 
-  // Handle edit
-  const handleEdit = async (storeId: string) => {
+  // Handle profile selection (giống desktop app on_profile_selected)
+  const handleProfileSelected = async (profileName: string) => {
+    if (!profileName || !profileName.trim()) {
+      return;
+    }
+
+    const store = stores.find((s) => s.name === profileName);
+    if (!store) {
+      // Nếu không tìm thấy trong danh sách, có thể là tên mới để tạo
+      setSelectedProfileName(profileName);
+      setFormData({
+        name: profileName,
+        store_url: '',
+        consumer_key: '',
+        consumer_secret: '',
+        wp_username: '',
+        wp_app_password: '',
+        set_as_active: false,
+      });
+      setEditingStore(null);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
-      const { data } = await apiFetch<StoreDetail>(endpoints.store(storeId));
+      const { data } = await apiFetch<StoreDetail>(endpoints.store(store.id));
       setEditingStore(data);
+      setSelectedProfileName(profileName);
       setFormData({
         name: data.name,
         store_url: data.store_url,
@@ -90,6 +124,14 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
       setError(`Failed to load store: ${err.message}`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Handle edit (giữ lại để tương thích với button "Sửa" trong table)
+  const handleEdit = async (storeId: string) => {
+    const store = stores.find((s) => s.id === storeId);
+    if (store) {
+      await handleProfileSelected(store.name);
     }
   };
 
@@ -134,12 +176,18 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
     }
   };
 
-  // Handle submit (create or update)
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Handle save profile (giống desktop app on_save_profile)
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.name || !formData.store_url || !formData.consumer_key || !formData.consumer_secret) {
-      setError('Vui lòng điền đầy đủ các trường bắt buộc: Tên, Store URL, Consumer Key, Consumer Secret');
+
+    const profileName = selectedProfileName.trim() || formData.name.trim();
+    if (!profileName) {
+      setError('Nhập tên store vào ô "Store profile" trước khi lưu.');
+      return;
+    }
+
+    if (!formData.store_url || !formData.consumer_key || !formData.consumer_secret) {
+      setError('Vui lòng điền đầy đủ các trường bắt buộc: Store URL, Consumer Key, Consumer Secret');
       return;
     }
 
@@ -147,13 +195,23 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
       setLoading(true);
       setError(null);
 
-      if (editingStore) {
+      // Kiểm tra xem store đã tồn tại chưa (giống desktop app logic)
+      const existingStore = stores.find((s) => s.name === profileName);
+
+      if (existingStore && (!editingStore || editingStore.name !== profileName)) {
+        // Store đã tồn tại nhưng không phải store đang edit -> lỗi
+        setError(`Store với tên "${profileName}" đã tồn tại. Vui lòng chọn store đó để chỉnh sửa.`);
+        setLoading(false);
+        return;
+      }
+
+      if (editingStore && editingStore.name === profileName) {
         // Update
         const updateData: StoreUpdateRequest = {
           name: formData.name,
           store_url: formData.store_url,
         };
-        
+
         // Only include credentials if they were changed (non-empty)
         if (formData.consumer_key) {
           updateData.consumer_key = formData.consumer_key;
@@ -198,14 +256,51 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
           body: JSON.stringify(createData),
         });
 
-        setSuccess(`Đã tạo store "${formData.name}" thành công`);
+        setSuccess(`Đã tạo store "${profileName}" thành công`);
       }
 
-      resetForm();
+      // Reload stores và chọn profile vừa lưu (giống desktop app)
       await loadStores();
+      await handleProfileSelected(profileName);
       if (onStoreChange) onStoreChange();
     } catch (err: any) {
       setError(`Failed to ${editingStore ? 'update' : 'create'} store: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle delete profile (giống desktop app on_delete_profile)
+  const handleDeleteProfile = async () => {
+    const profileName = selectedProfileName.trim() || formData.name.trim();
+    if (!profileName) {
+      setError('Không có cấu hình nào để xóa.');
+      return;
+    }
+
+    const store = stores.find((s) => s.name === profileName);
+    if (!store) {
+      setError('Không tìm thấy store để xóa.');
+      return;
+    }
+
+    if (!confirm(`Xóa cấu hình store "${profileName}"?`)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      await apiFetch(endpoints.store(store.id), {
+        method: 'DELETE',
+      });
+      setSuccess(`Đã xóa cấu hình store "${profileName}" thành công`);
+
+      // Reload stores và chọn store đầu tiên hoặc active store (giống desktop app)
+      await loadStores();
+      if (onStoreChange) onStoreChange();
+    } catch (err: any) {
+      setError(`Failed to delete store: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -216,10 +311,13 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Quản lý Store Profiles</h2>
         <button
-          onClick={resetForm}
-          className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+          onClick={() => {
+            resetForm();
+            setSelectedProfileName('');
+          }}
+          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
         >
-          {editingStore ? 'Hủy' : 'Tạo Store mới'}
+          + Tạo Store mới
         </button>
       </div>
 
@@ -235,8 +333,70 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
         </div>
       )}
 
+      {/* Profile Selector (giống desktop app) */}
+      <div className="bg-white p-6 rounded-lg shadow">
+        <h3 className="text-lg font-semibold mb-4">Cấu hình kết nối / Store profiles</h3>
+
+        <div className="grid grid-cols-4 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Store profile:
+            </label>
+            <select
+              value={selectedProfileName}
+              onChange={(e) => handleProfileSelected(e.target.value)}
+              className="w-full p-2 border rounded"
+              disabled={loading}
+            >
+              <option value="">-- Chọn hoặc nhập tên mới --</option>
+              {stores.map((store) => (
+                <option key={store.id} value={store.name}>
+                  {store.name} {store.is_active ? '(Active)' : ''}
+                </option>
+              ))}
+            </select>
+            <input
+              type="text"
+              value={selectedProfileName}
+              onChange={(e) => {
+                const newName = e.target.value;
+                setSelectedProfileName(newName);
+                setFormData({ ...formData, name: newName });
+                // Nếu không tìm thấy trong danh sách, reset editingStore
+                const found = stores.find((s) => s.name === newName);
+                if (!found) {
+                  setEditingStore(null);
+                }
+              }}
+              placeholder="Hoặc nhập tên store mới"
+              className="w-full p-2 border rounded mt-2"
+              disabled={loading}
+            />
+          </div>
+
+          <div className="flex items-end gap-2">
+            <button
+              type="button"
+              onClick={handleSaveProfile}
+              disabled={loading}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+            >
+              {editingStore ? 'Cập nhật' : 'Lưu cấu hình'}
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteProfile}
+              disabled={loading || !selectedProfileName}
+              className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50"
+            >
+              Xóa cấu hình
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Form */}
-      <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow">
+      <form onSubmit={handleSaveProfile} className="bg-white p-6 rounded-lg shadow">
         <h3 className="text-lg font-semibold mb-4">
           {editingStore ? 'Chỉnh sửa Store' : 'Tạo Store mới'}
         </h3>
@@ -249,7 +409,11 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
             <input
               type="text"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) => {
+                const newName = e.target.value;
+                setFormData({ ...formData, name: newName });
+                setSelectedProfileName(newName);
+              }}
               className="w-full p-2 border rounded"
               required
               disabled={loading}
@@ -341,31 +505,12 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
           </label>
         </div>
 
-        <div className="mt-4 flex gap-2">
-          <button
-            type="submit"
-            disabled={loading}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-          >
-            {loading ? 'Đang xử lý...' : editingStore ? 'Cập nhật' : 'Tạo Store'}
-          </button>
-          {editingStore && (
-            <button
-              type="button"
-              onClick={resetForm}
-              disabled={loading}
-              className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 disabled:opacity-50"
-            >
-              Hủy
-            </button>
-          )}
-        </div>
       </form>
 
       {/* Stores List */}
       <div className="bg-white p-6 rounded-lg shadow">
         <h3 className="text-lg font-semibold mb-4">Danh sách Stores</h3>
-        
+
         {loading && !stores.length ? (
           <div className="text-center py-4">Đang tải...</div>
         ) : stores.length === 0 ? (
