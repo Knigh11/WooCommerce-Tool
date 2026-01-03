@@ -32,7 +32,7 @@ interface ProductWithReviews {
 
 interface ReviewsProps {
   storeId: string | null;
-  onCreateJob?: (jobId: string) => void;
+  onCreateJob?: (jobId: string, jobToken?: string) => void;
 }
 
 interface TableRow {

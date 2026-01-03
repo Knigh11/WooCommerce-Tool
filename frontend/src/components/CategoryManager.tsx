@@ -2,7 +2,8 @@
  * Category Manager Component
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { apiFetch } from '../api/client';
 import { endpoints } from '../api/endpoints';
 import { CategoryNode, CategoryResponse } from '../api/types';
@@ -12,6 +13,7 @@ interface CategoryManagerProps {
 }
 
 export function CategoryManager({ storeId }: CategoryManagerProps) {
+  const { t } = useTranslation();
   const [categories, setCategories] = useState<CategoryNode[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<CategoryNode | null>(null);
   const [fullCategoryData, setFullCategoryData] = useState<CategoryResponse | null>(null);
@@ -41,11 +43,12 @@ export function CategoryManager({ storeId }: CategoryManagerProps) {
     setError(null);
     try {
       const { data } = await apiFetch<{ flattened: CategoryNode[] }>(
-        endpoints.categories(storeId)
+        endpoints.categories(storeId),
+        { storeId } // Pass storeId to ensure X-Store-Key is included if available
       );
       setCategories(data.flattened || []);
     } catch (err: any) {
-      setError(err.message || 'Lỗi khi tải categories');
+      setError(err.message || t("categories.failedToLoad"));
     } finally {
       setLoading(false);
     }
@@ -53,7 +56,7 @@ export function CategoryManager({ storeId }: CategoryManagerProps) {
 
   const handleCreate = async () => {
     if (!storeId || !name.trim()) {
-      setError('Vui lòng nhập tên category');
+      setError(t("categories.pleaseEnterName"));
       return;
     }
 
@@ -73,7 +76,7 @@ export function CategoryManager({ storeId }: CategoryManagerProps) {
       setEditMode(null);
       resetForm();
     } catch (err: any) {
-      setError(err.message || 'Lỗi khi tạo category');
+      setError(err.message || t("categories.errorCreating"));
     } finally {
       setLoading(false);
     }
@@ -81,7 +84,7 @@ export function CategoryManager({ storeId }: CategoryManagerProps) {
 
   const handleUpdate = async () => {
     if (!storeId || !selectedCategory || !name.trim()) {
-      setError('Vui lòng nhập tên category');
+      setError(t("categories.pleaseEnterName"));
       return;
     }
 
@@ -102,7 +105,7 @@ export function CategoryManager({ storeId }: CategoryManagerProps) {
       await loadFullCategoryData(selectedCategory.id);
       setEditMode(null);
     } catch (err: any) {
-      setError(err.message || 'Lỗi khi cập nhật category');
+      setError(err.message || t("categories.errorUpdating"));
     } finally {
       setLoading(false);
     }
@@ -115,7 +118,7 @@ export function CategoryManager({ storeId }: CategoryManagerProps) {
 
     const file = event.target.files[0];
     if (!file.type.startsWith('image/')) {
-      setError('Vui lòng chọn file ảnh');
+      setError(t("categories.pleaseSelectImage"));
       return;
     }
 
@@ -140,7 +143,7 @@ export function CategoryManager({ storeId }: CategoryManagerProps) {
       // Reload categories list to update image in list
       await loadCategories();
     } catch (err: any) {
-      setError(err.message || 'Lỗi khi upload ảnh');
+      setError(err.message || t("categories.errorUploadingImage"));
     } finally {
       setUploadingImage(false);
       // Reset file input
@@ -155,7 +158,7 @@ export function CategoryManager({ storeId }: CategoryManagerProps) {
       return;
     }
 
-    if (!window.confirm('Bạn có chắc chắn muốn xóa ảnh này?')) {
+    if (!window.confirm(t("categories.confirmDeleteImage"))) {
       return;
     }
 
@@ -177,14 +180,14 @@ export function CategoryManager({ storeId }: CategoryManagerProps) {
       // Reload categories list
       await loadCategories();
     } catch (err: any) {
-      setError(err.message || 'Lỗi khi xóa ảnh');
+      setError(err.message || t("categories.errorDeletingImage"));
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (categoryId: number) => {
-    if (!storeId || !window.confirm('Bạn có chắc chắn muốn xóa category này?')) {
+    if (!storeId || !window.confirm(t("categories.confirmDeleteCategory"))) {
       return;
     }
 
@@ -199,7 +202,7 @@ export function CategoryManager({ storeId }: CategoryManagerProps) {
         setSelectedCategory(null);
       }
     } catch (err: any) {
-      setError(err.message || 'Lỗi khi xóa category');
+      setError(err.message || t("categories.errorDeleting"));
     } finally {
       setLoading(false);
     }
@@ -253,7 +256,7 @@ export function CategoryManager({ storeId }: CategoryManagerProps) {
       setParent(data.parent);
       setDescription(data.description || '');
     } catch (err: any) {
-      setError(err.message || 'Lỗi khi tải chi tiết category');
+      setError(err.message || t("categories.errorLoadingDetails"));
       // Fallback to basic data from CategoryNode
       setName(category.name);
       setSlug(category.slug || '');
@@ -267,7 +270,7 @@ export function CategoryManager({ storeId }: CategoryManagerProps) {
   if (!storeId) {
     return (
       <div className="border rounded p-4 text-gray-500 text-center">
-        Vui lòng chọn store trước
+        {t("categories.selectStoreFirst")}
       </div>
     );
   }
@@ -275,7 +278,7 @@ export function CategoryManager({ storeId }: CategoryManagerProps) {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Quản lý Category</h2>
+        <h2 className="text-2xl font-bold">{t("categories.manageTitle")}</h2>
         <button
           onClick={() => {
             setEditMode('create');
@@ -284,7 +287,7 @@ export function CategoryManager({ storeId }: CategoryManagerProps) {
           }}
           className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
         >
-          + Tạo mới
+          + {t("categories.create")}
         </button>
       </div>
 
@@ -297,12 +300,12 @@ export function CategoryManager({ storeId }: CategoryManagerProps) {
       <div className="grid grid-cols-2 gap-4">
         {/* Category List */}
         <div className="border rounded p-4">
-          <h3 className="font-bold mb-4">Danh sách Categories</h3>
+          <h3 className="font-bold mb-4">{t("categories.title")}</h3>
           <div className="max-h-96 overflow-y-auto">
             {loading ? (
-              <p className="text-gray-500">Đang tải...</p>
+              <p className="text-gray-500">{t("common.loading")}</p>
             ) : categories.length === 0 ? (
-              <p className="text-gray-500">Không có categories</p>
+              <p className="text-gray-500">{t("categories.noCategories")}</p>
             ) : (
               categories.map((cat) => (
                 <div
@@ -325,7 +328,7 @@ export function CategoryManager({ storeId }: CategoryManagerProps) {
                         }}
                         className="text-blue-600 hover:text-blue-800 text-sm"
                       >
-                        Sửa
+                        {t("categories.edit")}
                       </button>
                       <button
                         onClick={(e) => {
@@ -334,7 +337,7 @@ export function CategoryManager({ storeId }: CategoryManagerProps) {
                         }}
                         className="text-red-600 hover:text-red-800 text-sm"
                       >
-                        Xóa
+                        {t("categories.delete")}
                       </button>
                     </div>
                   </div>
@@ -347,13 +350,13 @@ export function CategoryManager({ storeId }: CategoryManagerProps) {
         {/* Edit Form */}
         <div className="border rounded p-4">
           <h3 className="font-bold mb-4">
-            {editMode === 'create' ? 'Tạo Category mới' : editMode === 'edit' ? 'Sửa Category' : 'Chi tiết'}
+            {editMode === 'create' ? t("categories.create") : editMode === 'edit' ? t("categories.edit") : t("common.view")}
           </h3>
           
           {editMode && (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Tên:</label>
+                <label className="block text-sm font-medium mb-1">{t("categories.name")}:</label>
                 <input
                   type="text"
                   value={name}
@@ -364,7 +367,7 @@ export function CategoryManager({ storeId }: CategoryManagerProps) {
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-1">Slug (tùy chọn):</label>
+                <label className="block text-sm font-medium mb-1">{t("categories.slug")} ({t("common.optional")}):</label>
                 <input
                   type="text"
                   value={slug}
@@ -374,7 +377,7 @@ export function CategoryManager({ storeId }: CategoryManagerProps) {
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-1">Parent ID:</label>
+                <label className="block text-sm font-medium mb-1">{t("categories.parent")}:</label>
                 <input
                   type="number"
                   value={parent}
@@ -385,7 +388,7 @@ export function CategoryManager({ storeId }: CategoryManagerProps) {
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-1">Description:</label>
+                <label className="block text-sm font-medium mb-1">{t("categories.description")}:</label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -397,7 +400,7 @@ export function CategoryManager({ storeId }: CategoryManagerProps) {
               {/* Image Upload Section - Only show in edit mode */}
               {editMode === 'edit' && selectedCategory && (
                 <div className="border rounded p-4 bg-gray-50">
-                  <label className="block text-sm font-medium mb-2">Ảnh Category:</label>
+                  <label className="block text-sm font-medium mb-2">{t("categories.categoryImage")}:</label>
                   
                   {fullCategoryData?.image ? (
                     <div className="space-y-2">
@@ -406,7 +409,7 @@ export function CategoryManager({ storeId }: CategoryManagerProps) {
                         alt={fullCategoryData.name}
                         className="max-w-xs border rounded"
                       />
-                      <p className="text-sm text-gray-600">Image ID: {fullCategoryData.image.id}</p>
+                      <p className="text-sm text-gray-600">{t("categories.imageId")}: {fullCategoryData.image.id}</p>
                       <div className="flex gap-2">
                         <button
                           type="button"
@@ -414,7 +417,7 @@ export function CategoryManager({ storeId }: CategoryManagerProps) {
                           disabled={uploadingImage}
                           className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:bg-gray-400"
                         >
-                          {uploadingImage ? 'Đang upload...' : 'Đổi ảnh'}
+                          {uploadingImage ? t("categories.uploading") : t("categories.changeImage")}
                         </button>
                         <button
                           type="button"
@@ -422,20 +425,20 @@ export function CategoryManager({ storeId }: CategoryManagerProps) {
                           disabled={loading || uploadingImage}
                           className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 disabled:bg-gray-400"
                         >
-                          Xóa ảnh
+                          {t("categories.deleteImage")}
                         </button>
                       </div>
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      <p className="text-sm text-gray-500">Chưa có ảnh</p>
+                      <p className="text-sm text-gray-500">{t("categories.noImage")}</p>
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
                         disabled={uploadingImage}
                         className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 disabled:bg-gray-400"
                       >
-                        {uploadingImage ? 'Đang upload...' : 'Upload ảnh'}
+                        {uploadingImage ? t("categories.uploading") : t("categories.uploadImage")}
                       </button>
                     </div>
                   )}
@@ -457,7 +460,7 @@ export function CategoryManager({ storeId }: CategoryManagerProps) {
                   disabled={loading}
                   className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400"
                 >
-                  {loading ? 'Đang xử lý...' : editMode === 'create' ? 'Tạo' : 'Cập nhật'}
+                  {loading ? t("categories.processing") : editMode === 'create' ? t("categories.create") : t("categories.update")}
                 </button>
                 <button
                   onClick={() => {
@@ -466,7 +469,7 @@ export function CategoryManager({ storeId }: CategoryManagerProps) {
                   }}
                   className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
                 >
-                  Hủy
+                  {t("categories.cancel")}
                 </button>
               </div>
             </div>
@@ -475,43 +478,43 @@ export function CategoryManager({ storeId }: CategoryManagerProps) {
           {!editMode && selectedCategory && (
             <div className="space-y-3">
               {loadingCategory ? (
-                <p className="text-gray-500">Đang tải chi tiết...</p>
+                <p className="text-gray-500">{t("categories.loadingDetails")}</p>
               ) : fullCategoryData ? (
                 <>
                   <div className="grid grid-cols-2 gap-2">
-                    <p><strong>ID:</strong> {fullCategoryData.id}</p>
-                    <p><strong>Count:</strong> {fullCategoryData.count}</p>
+                    <p><strong>{t("table.id")}:</strong> {fullCategoryData.id}</p>
+                    <p><strong>{t("categories.count")}:</strong> {fullCategoryData.count}</p>
                   </div>
                   <div>
-                    <p><strong>Tên:</strong> {fullCategoryData.name}</p>
+                    <p><strong>{t("categories.name")}:</strong> {fullCategoryData.name}</p>
                   </div>
                   <div>
-                    <p><strong>Slug:</strong> {fullCategoryData.slug || '(trống)'}</p>
+                    <p><strong>{t("categories.slug")}:</strong> {fullCategoryData.slug || t("categories.empty")}</p>
                   </div>
                   <div>
-                    <p><strong>Parent ID:</strong> {fullCategoryData.parent || 0}</p>
+                    <p><strong>{t("categories.parentId")}:</strong> {fullCategoryData.parent || 0}</p>
                   </div>
                   <div>
-                    <p><strong>Path:</strong> {selectedCategory.full_path}</p>
+                    <p><strong>{t("categories.path")}:</strong> {selectedCategory.full_path}</p>
                   </div>
                   {fullCategoryData.image && (
                     <div>
-                      <p><strong>Ảnh:</strong></p>
+                      <p><strong>{t("categories.categoryImage")}:</strong></p>
                       <img 
                         src={fullCategoryData.image.src} 
                         alt={fullCategoryData.name}
                         className="mt-2 max-w-xs border rounded"
                       />
-                      <p className="text-sm text-gray-600">Image ID: {fullCategoryData.image.id}</p>
+                      <p className="text-sm text-gray-600">{t("categories.imageId")}: {fullCategoryData.image.id}</p>
                     </div>
                   )}
                   <div>
-                    <p><strong>Description:</strong></p>
+                    <p><strong>{t("categories.description")}:</strong></p>
                     <div className="mt-2 p-3 bg-gray-50 border rounded max-h-48 overflow-y-auto">
                       {fullCategoryData.description ? (
                         <div dangerouslySetInnerHTML={{ __html: fullCategoryData.description }} />
                       ) : (
-                        <p className="text-gray-500 italic">(Không có mô tả)</p>
+                        <p className="text-gray-500 italic">({t("categories.noDescription")})</p>
                       )}
                     </div>
                   </div>
@@ -519,24 +522,24 @@ export function CategoryManager({ storeId }: CategoryManagerProps) {
               ) : (
                 <>
                   <div className="grid grid-cols-2 gap-2">
-                    <p><strong>ID:</strong> {selectedCategory.id}</p>
-                    <p><strong>Count:</strong> {selectedCategory.count}</p>
+                    <p><strong>{t("table.id")}:</strong> {selectedCategory.id}</p>
+                    <p><strong>{t("categories.count")}:</strong> {selectedCategory.count}</p>
                   </div>
                   <div>
-                    <p><strong>Tên:</strong> {selectedCategory.name}</p>
+                    <p><strong>{t("categories.name")}:</strong> {selectedCategory.name}</p>
                   </div>
                   <div>
-                    <p><strong>Slug:</strong> {selectedCategory.slug || '(trống)'}</p>
+                    <p><strong>{t("categories.slug")}:</strong> {selectedCategory.slug || t("categories.empty")}</p>
                   </div>
                   <div>
-                    <p><strong>Parent ID:</strong> {selectedCategory.parent || 0}</p>
+                    <p><strong>{t("categories.parentId")}:</strong> {selectedCategory.parent || 0}</p>
                   </div>
                   <div>
-                    <p><strong>Path:</strong> {selectedCategory.full_path}</p>
+                    <p><strong>{t("categories.path")}:</strong> {selectedCategory.full_path}</p>
                   </div>
                   {selectedCategory.description && (
                     <div>
-                      <p><strong>Description:</strong></p>
+                      <p><strong>{t("categories.description")}:</strong></p>
                       <div className="mt-2 p-3 bg-gray-50 border rounded max-h-48 overflow-y-auto">
                         <div dangerouslySetInnerHTML={{ __html: selectedCategory.description }} />
                       </div>

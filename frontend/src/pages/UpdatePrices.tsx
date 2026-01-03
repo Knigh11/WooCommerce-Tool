@@ -90,7 +90,7 @@ export function UpdatePrices() {
         request,
       })
 
-      addJob(result.job_id, selectedStoreId)
+      addJob(result.job_id, selectedStoreId, result.job_token)
       openDrawer()
       toast.success(t("job.created") + ": " + result.job_id.substring(0, 8))
     } catch (err: any) {

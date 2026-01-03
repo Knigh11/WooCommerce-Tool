@@ -4,6 +4,8 @@ import { SidebarNav } from "./SidebarNav"
 import { TopBar } from "./TopBar"
 import { Toaster } from "sonner"
 import { useJobManager } from "../../state/jobManager"
+import { JobModal } from "../JobModal"
+import { useStoreApiKey } from "../../hooks/useStoreApiKey"
 
 // Lazy load JobDrawer - only load when needed
 const JobDrawer = lazy(() => import("./JobDrawer").then(m => ({ default: m.JobDrawer })))
@@ -15,7 +17,10 @@ const AnimatedPageWrapper = lazy(() =>
 
 export function AppShell() {
   const location = useLocation()
-  const { isDrawerOpen, activeJobIds } = useJobManager()
+  const { isDrawerOpen, activeJobIds, modalJobId, closeModal } = useJobManager()
+  
+  // Automatically load and cache store API key when store is selected
+  useStoreApiKey()
   
   // Only mount JobDrawer when drawer is open OR there are active jobs
   // This ensures the component code is only loaded when needed
@@ -39,6 +44,7 @@ export function AppShell() {
           <JobDrawer />
         </Suspense>
       )}
+      <JobModal jobId={modalJobId} onClose={closeModal} />
       <Toaster position="top-right" />
     </div>
   )

@@ -16,6 +16,7 @@ export interface StoreDetail {
   has_wc_keys: boolean;
   has_wp_creds: boolean;
   is_active: boolean;
+  api_key?: string; // Store API key for authentication
 }
 
 export interface StoreCreateRequest {
@@ -25,6 +26,7 @@ export interface StoreCreateRequest {
   consumer_secret: string;
   wp_username?: string;
   wp_app_password?: string;
+  api_key?: string;
   set_as_active?: boolean;
 }
 
@@ -35,6 +37,7 @@ export interface StoreUpdateRequest {
   consumer_secret?: string;
   wp_username?: string;
   wp_app_password?: string;
+  api_key?: string;
 }
 
 export interface ConnectionTestResponse {
@@ -186,6 +189,7 @@ export interface JobResponse {
 
 export interface JobCreateResponse {
   job_id: string;
+  job_token?: string; // Optional for backward compatibility
   status: string;
 }
 
@@ -303,4 +307,151 @@ export interface ProductUpdateRequest {
   images?: EditableImage[];
   variations?: EditableVariation[];
   images_to_delete_media_ids?: number[];
+}
+
+// BMSM Types
+export interface BMSMRule {
+  min: number;
+  rate: number; // 0.05 = 5%
+}
+
+export interface BMSMRules {
+  enabled: boolean;
+  rules: BMSMRule[];
+}
+
+export interface ProductSearchRequest {
+  query: string;
+  page?: number;
+  per_page?: number;
+  fields?: string[];
+}
+
+export interface ProductSearchResult {
+  id: number;
+  name: string;
+  type?: string;
+  price?: string;
+  sku?: string;
+  [key: string]: any;
+}
+
+export interface ProductSearchResponse {
+  products: ProductSearchResult[];
+  total: number;
+  page: number;
+  per_page: number;
+}
+
+export interface ProductRulesResponse {
+  product_id: number;
+  product_name: string;
+  rules: BMSMRules;
+}
+
+export interface ProductRulesUpdateRequest {
+  rules: BMSMRules;
+}
+
+export interface InventoryRow {
+  product_id: number;
+  name: string;
+  type: string;
+  enabled: boolean;
+  tier_count: number;
+  max_discount_percent: number | null;
+  min_qty_range: string;
+  validity_status: string; // "valid", "invalid", "empty", "missing"
+}
+
+export interface InventoryIndexRequest {
+  page: number;
+  per_page: number;
+  search: string;
+  filter_type: "all" | "enabled" | "disabled_with_rules" | "invalid" | "with_rules" | "no_rules";
+}
+
+export interface InventorySummary {
+  scanned: number;
+  enabled: number;
+  disabled: number;
+  with_rules: number;
+  invalid: number;
+}
+
+export interface InventoryIndexResponse {
+  page: number;
+  per_page: number;
+  total: number;
+  items: InventoryRow[];
+  summary: InventorySummary;
+}
+
+// FBT Combos Types
+export interface DiscountRule {
+  min: number;
+  rate: number; // 0.05 = 5%
+}
+
+export interface ProductLite {
+  id: number;
+  name: string;
+  type: string;
+  price?: string | null;
+  stock_status?: string;
+}
+
+export interface ComboBase {
+  enabled: boolean;
+  apply_scope: "main_only" | "all_in_combo";
+  product_ids: number[];
+  main_ids?: number[] | null;
+  priority: number;
+  discount_rules: DiscountRule[];
+}
+
+export interface ComboResponse extends ComboBase {
+  main_id: number;
+  main_name?: string | null;
+  combo_ids: number[];
+  updated_at?: string | null;
+}
+
+export interface ComboCreateRequest extends ComboBase {}
+
+export interface ComboUpdateRequest extends ComboBase {}
+
+export interface ComboListResponse {
+  page: number;
+  per_page: number;
+  total: number;
+  items: ComboResponse[];
+  skipped_count?: number;
+  skipped_ids?: number[] | null;
+}
+
+export interface FBTProductSearchRequest {
+  query: string;
+  per_page?: number;
+  page?: number;
+}
+
+export interface FBTProductSearchResponse {
+  products: ProductLite[];
+  total: number;
+}
+
+export interface ComboResolveRequest {
+  product_id: number;
+}
+
+export interface ComboResolveResponse {
+  combo_id?: number | null;
+  recommended_product_ids: number[];
+  discount_rules: DiscountRule[];
+}
+
+export interface ConnectionTestResponse {
+  success: boolean;
+  message: string;
 }

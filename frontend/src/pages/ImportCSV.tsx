@@ -14,9 +14,9 @@ export function ImportCSV() {
       <PageHeader title={t("pages.importCsv.title")} />
       <CSVImport
         storeId={selectedStoreId}
-        onCreateJob={(jobId) => {
+        onCreateJob={(jobId, jobToken) => {
           if (selectedStoreId) {
-            addJob(jobId, selectedStoreId)
+            addJob(jobId, selectedStoreId, jobToken)
             openDrawer()
           }
         }}

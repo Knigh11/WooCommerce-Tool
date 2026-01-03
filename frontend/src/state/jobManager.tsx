@@ -9,6 +9,7 @@ import {
 export interface JobState {
   jobId: string
   storeId: string
+  jobToken?: string // Job token for SSE and download access
   status: "queued" | "running" | "done" | "failed" | "cancelled"
   progress?: JobProgress
   metrics?: JobMetrics
@@ -21,7 +22,7 @@ export interface JobState {
 
 interface JobManagerContextType {
   jobs: Map<string, JobState>
-  addJob: (jobId: string, storeId: string) => void
+  addJob: (jobId: string, storeId: string, jobToken?: string) => void
   removeJob: (jobId: string) => void
   updateJob: (jobId: string, updates: Partial<JobState>) => void
   getJob: (jobId: string) => JobState | undefined
@@ -30,6 +31,10 @@ interface JobManagerContextType {
   closeDrawer: () => void
   toggleDrawer: () => void
   activeJobIds: string[]
+  // JobModal support
+  modalJobId: string | null
+  openModal: (jobId: string) => void
+  closeModal: () => void
 }
 
 const JobManagerContext = createContext<JobManagerContextType | undefined>(
@@ -41,8 +46,9 @@ const MAX_JOBS = 20
 export function JobProvider({ children }: { children: ReactNode }) {
   const [jobs, setJobs] = useState<Map<string, JobState>>(new Map())
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const [modalJobId, setModalJobId] = useState<string | null>(null)
 
-  const addJob = useCallback((jobId: string, storeId: string) => {
+  const addJob = useCallback((jobId: string, storeId: string, jobToken?: string) => {
     setJobs((prev) => {
       const next = new Map(prev)
       
@@ -75,6 +81,7 @@ export function JobProvider({ children }: { children: ReactNode }) {
       next.set(jobId, {
         jobId,
         storeId,
+        jobToken,
         status: "queued",
         logs: [],
         sseConnected: false,
@@ -126,6 +133,14 @@ export function JobProvider({ children }: { children: ReactNode }) {
     setIsDrawerOpen((prev) => !prev)
   }, [])
 
+  const openModal = useCallback((jobId: string) => {
+    setModalJobId(jobId)
+  }, [])
+
+  const closeModal = useCallback(() => {
+    setModalJobId(null)
+  }, [])
+
   // Only include jobs that are not in terminal state
   const activeJobIds = Array.from(jobs.entries())
     .filter(([_, job]) => !["done", "failed", "cancelled"].includes(job.status))
@@ -144,6 +159,9 @@ export function JobProvider({ children }: { children: ReactNode }) {
         closeDrawer,
         toggleDrawer,
         activeJobIds,
+        modalJobId,
+        openModal,
+        closeModal,
       }}
     >
       {children}

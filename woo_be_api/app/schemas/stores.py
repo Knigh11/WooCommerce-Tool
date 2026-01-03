@@ -34,6 +34,7 @@ class StoreUpdateRequest(BaseModel):
     consumer_secret: Optional[str] = Field(None, description="WooCommerce Consumer Secret")
     wp_username: Optional[str] = Field(None, description="WordPress username")
     wp_app_password: Optional[str] = Field(None, description="WordPress App Password")
+    api_key: Optional[str] = Field(None, description="Store API key")
 
 
 class StoreDetail(BaseModel):
@@ -44,4 +45,5 @@ class StoreDetail(BaseModel):
     has_wc_keys: bool
     has_wp_creds: bool
     is_active: bool
+    api_key: Optional[str] = Field(None, description="Store API key for authentication")
 

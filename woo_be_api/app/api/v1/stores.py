@@ -65,7 +65,8 @@ async def get_store(store_id: str):
             store_url=store.get("store_url"),
             has_wc_keys=bool(store.get("consumer_key") and store.get("consumer_secret")),
             has_wp_creds=bool(store.get("wp_username") and store.get("wp_app_password")),
-            is_active=is_active
+            is_active=is_active,
+            api_key=store.get("api_key")  # Return API key for frontend use
         )
     except HTTPException:
         raise
@@ -164,6 +165,13 @@ async def create_store(request: StoreCreateRequest):
         if request.wp_app_password:
             store_config["wp_app_password"] = request.wp_app_password.strip()
         
+        # Generate or use provided API key
+        import secrets
+        if request.api_key:
+            store_config["api_key"] = request.api_key.strip()
+        else:
+            store_config["api_key"] = secrets.token_hex(32)
+        
         # Validate config (giống desktop app)
         is_valid, err_msg = validate_store_config(store_config)
         if not is_valid:
@@ -194,7 +202,8 @@ async def create_store(request: StoreCreateRequest):
             store_url=store_config["store_url"],
             has_wc_keys=True,
             has_wp_creds=bool(store_config.get("wp_username") and store_config.get("wp_app_password")),
-            is_active=is_active
+            is_active=is_active,
+            api_key=store_config.get("api_key")
         )
     except HTTPException:
         raise
@@ -231,6 +240,15 @@ async def update_store(store_id: str, request: StoreUpdateRequest):
         store_config = stores[store_name].copy()
         
         # Update fields if provided
+        if request.api_key is not None:
+            # If api_key is provided (even empty string), update it
+            # Empty string means remove the key, non-empty means set it
+            if request.api_key.strip():
+                store_config["api_key"] = request.api_key.strip()
+            else:
+                # Remove api_key if empty string is provided
+                store_config.pop("api_key", None)
+        
         if request.name is not None and request.name != store_name:
             # Check if new name already exists
             if request.name in stores:
@@ -290,7 +308,8 @@ async def update_store(store_id: str, request: StoreUpdateRequest):
             store_url=store_config["store_url"],
             has_wc_keys=bool(store_config.get("consumer_key") and store_config.get("consumer_secret")),
             has_wp_creds=bool(store_config.get("wp_username") and store_config.get("wp_app_password")),
-            is_active=is_active
+            is_active=is_active,
+            api_key=store_config.get("api_key")
         )
     except HTTPException:
         raise

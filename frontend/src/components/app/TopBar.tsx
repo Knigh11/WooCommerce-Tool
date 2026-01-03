@@ -17,6 +17,7 @@ import {
 import { useJobManager } from "../../state/jobManager"
 import { useState } from "react"
 import { extractSlugFromUrl, parseProductIds } from "../../api/client"
+import { JobCenter } from "../JobCenter"
 
 export function TopBar() {
   const { t, i18n } = useTranslation()
@@ -94,7 +95,10 @@ export function TopBar() {
       </div>
 
       <div className="flex items-center gap-2">
-        {/* Jobs Button */}
+        {/* JobCenter - Job management panel */}
+        <JobCenter variant="button" />
+        
+        {/* Legacy Jobs Drawer Button (optional, can be removed if JobCenter is sufficient) */}
         <Button
           variant="outline"
           onClick={openDrawer}

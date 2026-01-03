@@ -3,7 +3,6 @@ Event system for job progress and logging using Redis Streams.
 """
 
 import json
-import time
 import uuid
 import asyncio
 from typing import Dict, Optional, Any, AsyncIterator
@@ -171,8 +170,9 @@ class JobStateManager:
         self,
         store_id: str,
         job_type: str,
-        params: Dict[str, Any]
-    ) -> str:
+        params: Dict[str, Any],
+        client_session: Optional[str] = None
+    ) -> tuple[str, str]:
         """
         Create a new job.
         
@@ -180,29 +180,95 @@ class JobStateManager:
             store_id: Store ID
             job_type: Job type (delete-products, update-prices, etc.)
             params: Job parameters
+            client_session: Optional client session ID for multi-user safety
         
         Returns:
-            Job ID
+            Tuple of (job_id, job_token)
         """
+        import secrets
+        
         job_id = str(uuid.uuid4())
+        job_token = secrets.token_hex(32)
         state_key = f"job:{job_id}:state"
         
         state = {
             "job_id": job_id,
             "store_id": store_id,
             "job_type": job_type,
+            "job_token": job_token,
             "status": "queued",
             "params": json.dumps(params),
             "created_at": datetime.utcnow().isoformat(),
             "updated_at": datetime.utcnow().isoformat()
         }
         
+        # Add client_session if provided
+        if client_session:
+            state["client_session"] = client_session
+        
         await self.redis.hset(state_key, mapping=state)
         
         # Set TTL (24 hours)
         await self.redis.expire(state_key, 86400)
         
-        return job_id
+        # Also set TTL on events stream
+        stream_key = f"job:{job_id}:events"
+        await self.redis.expire(stream_key, 86400)
+        
+        return job_id, job_token
+    
+    async def verify_job_token(self, job_id: str, job_token: str) -> bool:
+        """
+        Verify job token matches job.
+        
+        Args:
+            job_id: Job ID
+            job_token: Job token to verify
+        
+        Returns:
+            True if token matches, False otherwise
+        """
+        import secrets
+        
+        state = await self.get_job_state(job_id)
+        if not state:
+            return False
+        
+        stored_token = state.get("job_token")
+        if not stored_token:
+            return False
+        
+        return secrets.compare_digest(job_token, stored_token)
+    
+    async def verify_client_session(self, job_id: str, client_session: Optional[str]) -> bool:
+        """
+        Verify client session matches job.
+        
+        Args:
+            job_id: Job ID
+            client_session: Client session to verify
+        
+        Returns:
+            True if session matches or job has no session, False otherwise
+        """
+        import secrets
+        
+        state = await self.get_job_state(job_id)
+        if not state:
+            return False
+        
+        stored_session = state.get("client_session")
+        
+        # If job has no session, allow access (backward compatibility)
+        if not stored_session:
+            return True
+        
+        # If no session provided, deny access
+        if not client_session:
+            return False
+        
+        # Compare sessions
+        return secrets.compare_digest(client_session, stored_session)
     
     async def get_job_state(self, job_id: str) -> Optional[Dict[str, Any]]:
         """
@@ -215,10 +281,17 @@ class JobStateManager:
             Job state dict or None if not found
         """
         state_key = f"job:{job_id}:state"
-        state = await self.redis.hgetall(state_key)
+        state_raw = await self.redis.hgetall(state_key)
         
-        if not state:
+        if not state_raw:
             return None
+        
+        # Decode bytes to strings
+        state = {}
+        for k, v in state_raw.items():
+            key = k.decode() if isinstance(k, bytes) else k
+            value = v.decode() if isinstance(v, bytes) else v
+            state[key] = value
         
         # Parse JSON fields
         if "params" in state:
@@ -350,10 +423,17 @@ async def stream_job_events(
             if messages:
                 for stream_name, events in messages:
                     for event_id, fields in events:
+                        # Decode bytes keys and values from Redis
+                        decoded_fields = {}
+                        for k, v in fields.items():
+                            key = k.decode() if isinstance(k, bytes) else k
+                            value = v.decode() if isinstance(v, bytes) else v
+                            decoded_fields[key] = value
+                        
                         yield {
-                            "id": event_id,
-                            "event": fields.get("event", "message"),
-                            "data": fields.get("data", "{}")
+                            "id": event_id.decode() if isinstance(event_id, bytes) else event_id,
+                            "event": decoded_fields.get("event", "message"),
+                            "data": decoded_fields.get("data", "{}")
                         }
                         last_id = event_id
             else:

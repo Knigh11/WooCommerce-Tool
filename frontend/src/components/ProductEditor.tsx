@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { apiFetch } from '../api/client';
 import { endpoints } from '../api/endpoints';
 import { EditableAttribute, EditableImage, EditableProduct, EditableVariation, ProductUpdateRequest } from '../api/types';
@@ -102,6 +103,7 @@ function generateVariationSku(
 }
 
 export function ProductEditor({ storeId, initialUrl, initialId }: ProductEditorProps) {
+  const { t } = useTranslation();
   const [productUrl, setProductUrl] = useState(initialUrl || '');
   const [product, setProduct] = useState<EditableProduct | null>(null);
   const [loading, setLoading] = useState(false);
@@ -125,7 +127,7 @@ export function ProductEditor({ storeId, initialUrl, initialId }: ProductEditorP
 
   const handleFetch = async () => {
     if (!storeId || !productUrl.trim()) {
-      setError('Vui lòng nhập URL sản phẩm');
+      setError(t('productEditor.pleaseEnterUrl'));
       return;
     }
 
@@ -143,9 +145,9 @@ export function ProductEditor({ storeId, initialUrl, initialId }: ProductEditorP
       setOriginalImageIds(originalIds);
       setSessionUploadedIds(new Set());
       setSelectedImageIndex(null);
-      setSuccess('Đã tải sản phẩm thành công');
+      setSuccess(t('productEditor.loadedSuccessfully'));
     } catch (err: any) {
-      setError(`Lỗi khi tải sản phẩm: ${err.message}`);
+      setError(t('productEditor.loadError', { message: err.message }));
       setProduct(null);
     } finally {
       setLoading(false);
@@ -165,10 +167,10 @@ export function ProductEditor({ storeId, initialUrl, initialId }: ProductEditorP
           setOriginalImageIds(originalIds);
           setSessionUploadedIds(new Set());
           setSelectedImageIndex(null);
-          setSuccess('Đã tải sản phẩm thành công');
+          setSuccess(t('productEditor.loadedSuccessfully'));
         })
         .catch((err: any) => {
-          setError(`Lỗi khi tải sản phẩm: ${err.message}`);
+          setError(t('productEditor.loadError', { message: err.message }));
           setProduct(null);
         })
         .finally(() => {
@@ -179,7 +181,7 @@ export function ProductEditor({ storeId, initialUrl, initialId }: ProductEditorP
 
   const handleSave = async () => {
     if (!storeId || !product) {
-      setError('Chưa có sản phẩm để lưu');
+      setError(t('productEditor.noProductToSave'));
       return;
     }
 
@@ -210,7 +212,7 @@ export function ProductEditor({ storeId, initialUrl, initialId }: ProductEditorP
         }
       );
 
-      setSuccess('Đã lưu sản phẩm thành công');
+      setSuccess(t('productEditor.savedSuccessfully'));
 
       // Reload product after save
       const { data: freshProduct } = await apiFetch<EditableProduct>(
@@ -223,7 +225,7 @@ export function ProductEditor({ storeId, initialUrl, initialId }: ProductEditorP
       setSessionUploadedIds(new Set());
       setSelectedImageIndex(null);
     } catch (err: any) {
-      setError(`Lỗi khi lưu: ${err.message}`);
+      setError(t('productEditor.saveError', { message: err.message }));
     } finally {
       setSaving(false);
     }
@@ -477,9 +479,9 @@ export function ProductEditor({ storeId, initialUrl, initialId }: ProductEditorP
         images: [...product.images, ...uploadedImages]
       });
 
-      setSuccess(`Đã upload ${uploadedImages.length} ảnh thành công`);
+      setSuccess(t('productEditor.uploadSuccess', { count: uploadedImages.length }));
     } catch (err: any) {
-      setError(`Lỗi khi upload ảnh: ${err.message}`);
+      setError(t('productEditor.uploadError', { message: err.message }));
     } finally {
       setUploadingImages(false);
       if (fileInputRef.current) {
@@ -664,11 +666,11 @@ export function ProductEditor({ storeId, initialUrl, initialId }: ProductEditorP
 
   return (
     <div className="border rounded p-4">
-      <h3 className="text-lg font-bold mb-4">Chỉnh sửa chi tiết sản phẩm</h3>
+      <h3 className="text-lg font-bold mb-4">{t('productEditor.title')}</h3>
 
       {/* Fetch Product Section */}
       <div className="mb-6">
-        <label className="block text-sm font-medium mb-2">URL sản phẩm:</label>
+        <label className="block text-sm font-medium mb-2">{t('productEditor.productUrl')}</label>
         <div className="flex gap-2">
           <input
             type="text"
@@ -683,7 +685,7 @@ export function ProductEditor({ storeId, initialUrl, initialId }: ProductEditorP
             disabled={loading || !storeId}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
           >
-            {loading ? 'Đang tải...' : 'Lấy dữ liệu'}
+            {loading ? t('common.loading') : t('productEditor.fetchData')}
           </button>
         </div>
       </div>
@@ -705,7 +707,7 @@ export function ProductEditor({ storeId, initialUrl, initialId }: ProductEditorP
         <div className="space-y-6">
           {/* Basic Info */}
           <div>
-            <label className="block text-sm font-medium mb-2">Tên sản phẩm:</label>
+            <label className="block text-sm font-medium mb-2">{t('productEditor.productName')}</label>
             <input
               type="text"
               className="w-full p-2 border rounded"

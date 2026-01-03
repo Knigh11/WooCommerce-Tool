@@ -14,9 +14,9 @@ export function DeleteProducts() {
       <PageHeader title={t("pages.delete.title")} />
       <DeleteProductsComponent
         storeId={selectedStoreId}
-        onCreateJob={(jobId) => {
+        onCreateJob={(jobId, jobToken) => {
           if (selectedStoreId) {
-            addJob(jobId, selectedStoreId)
+            addJob(jobId, selectedStoreId, jobToken)
             openDrawer()
           }
         }}

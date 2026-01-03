@@ -12,7 +12,24 @@ services:
       timeout: 3s
       retries: 5
 
+  # Backend service (if running in Docker)
+  # Uncomment and configure as needed:
+  # backend:
+  #   build: .
+  #   ports:
+  #     - "8000:8000"
+  #   environment:
+  #     - REDIS_URL=redis://redis:6379/0
+  #     - DATA_DIR=/data/tmp
+  #   volumes:
+  #     - ./woo_config.json:/app/woo_config.json
+  #     - desc_data:/data/tmp
+  #   depends_on:
+  #     - redis
+
 volumes:
   redis_data:
+  # desc_data:  # Uncomment if using backend service
+
 
 

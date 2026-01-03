@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
 import { apiFetch } from '../api/client';
 import { endpoints } from '../api/endpoints';
@@ -8,6 +9,7 @@ interface StoreManagerProps {
 }
 
 export function StoreManager({ onStoreChange }: StoreManagerProps) {
+  const { t } = useTranslation();
   const [stores, setStores] = useState<StoreSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +59,7 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
         }
       }
     } catch (err: any) {
-      setError(`Failed to load stores: ${err.message}`);
+      setError(t("settings.storeManager.loadError", { message: err.message }));
     } finally {
       setLoading(false);
     }
@@ -92,15 +94,16 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
     if (!store) {
       // Nếu không tìm thấy trong danh sách, có thể là tên mới để tạo
       setSelectedProfileName(profileName);
-      setFormData({
-        name: profileName,
-        store_url: '',
-        consumer_key: '',
-        consumer_secret: '',
-        wp_username: '',
-        wp_app_password: '',
-        set_as_active: false,
-      });
+        setFormData({
+          name: profileName,
+          store_url: '',
+          consumer_key: '',
+          consumer_secret: '',
+          wp_username: '',
+          wp_app_password: '',
+          api_key: '',
+          set_as_active: false,
+        });
       setEditingStore(null);
       return;
     }
@@ -108,9 +111,18 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
     try {
       setLoading(true);
       setError(null);
-      const { data } = await apiFetch<StoreDetail>(endpoints.store(store.id));
+      const { data } = await apiFetch<StoreDetail>(endpoints.store(store.id), {
+        storeId: store.id, // Include storeId to send X-Store-Key if available
+      });
       setEditingStore(data);
       setSelectedProfileName(profileName);
+      
+      // Update API key cache from profile
+      if (data.api_key) {
+        const { updateStoreApiKeyFromProfile } = await import("../utils/storeKey");
+        updateStoreApiKeyFromProfile(store.id, data);
+      }
+      
       setFormData({
         name: data.name,
         store_url: data.store_url,
@@ -118,8 +130,15 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
         consumer_secret: '',
         wp_username: '',
         wp_app_password: '',
+        api_key: data.api_key || '', // Show API key (it's needed for frontend)
         set_as_active: data.is_active,
       });
+      
+      // Update API key cache
+      if (data.api_key) {
+        const { updateStoreApiKeyFromProfile } = await import("../utils/storeKey");
+        updateStoreApiKeyFromProfile(store.id, data);
+      }
     } catch (err: any) {
       setError(`Failed to load store: ${err.message}`);
     } finally {
@@ -137,7 +156,7 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
 
   // Handle delete
   const handleDelete = async (storeId: string, storeName: string) => {
-    if (!confirm(`Bạn có chắc chắn muốn xóa store "${storeName}"?`)) {
+    if (!confirm(t("settings.storeManager.deleteConfirm", { name: storeName }))) {
       return;
     }
 
@@ -147,7 +166,7 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
       await apiFetch(endpoints.store(storeId), {
         method: 'DELETE',
       });
-      setSuccess(`Đã xóa store "${storeName}" thành công`);
+      setSuccess(t("settings.storeManager.deleteSuccess", { name: storeName }));
       resetForm();
       await loadStores();
       if (onStoreChange) onStoreChange();
@@ -166,7 +185,7 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
       await apiFetch(endpoints.setActiveStore(storeId), {
         method: 'POST',
       });
-      setSuccess('Đã đặt store làm active thành công');
+      setSuccess(t("settings.storeManager.setActiveSuccess"));
       await loadStores();
       if (onStoreChange) onStoreChange();
     } catch (err: any) {
@@ -182,12 +201,7 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
 
     const profileName = selectedProfileName.trim() || formData.name.trim();
     if (!profileName) {
-      setError('Nhập tên store vào ô "Store profile" trước khi lưu.');
-      return;
-    }
-
-    if (!formData.store_url || !formData.consumer_key || !formData.consumer_secret) {
-      setError('Vui lòng điền đầy đủ các trường bắt buộc: Store URL, Consumer Key, Consumer Secret');
+      setError(t("settings.storeManager.nameRequired"));
       return;
     }
 
@@ -200,12 +214,18 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
 
       if (existingStore && (!editingStore || editingStore.name !== profileName)) {
         // Store đã tồn tại nhưng không phải store đang edit -> lỗi
-        setError(`Store với tên "${profileName}" đã tồn tại. Vui lòng chọn store đó để chỉnh sửa.`);
+        setError(t("settings.storeManager.storeExists", { name: profileName }));
         setLoading(false);
         return;
       }
 
       if (editingStore && editingStore.name === profileName) {
+        // Update existing store - only validate store_url (consumer_key/secret are optional when updating)
+        if (!formData.store_url) {
+          setError(t("settings.storeManager.storeUrlRequired"));
+          setLoading(false);
+          return;
+        }
         // Update
         const updateData: StoreUpdateRequest = {
           name: formData.name,
@@ -225,10 +245,15 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
         if (formData.wp_app_password !== undefined) {
           updateData.wp_app_password = formData.wp_app_password || undefined;
         }
+        // Include API key if provided (send it if it has a value)
+        if (formData.api_key && formData.api_key.trim()) {
+          updateData.api_key = formData.api_key.trim();
+        }
 
         await apiFetch(endpoints.store(editingStore.id), {
           method: 'PUT',
           body: JSON.stringify(updateData),
+          storeId: editingStore.id, // Include storeId to send X-Store-Key if available
         });
 
         // Set as active if requested
@@ -238,8 +263,15 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
           });
         }
 
-        setSuccess(`Đã cập nhật store "${formData.name}" thành công`);
+        setSuccess(t("settings.storeManager.updateSuccess", { name: formData.name }));
       } else {
+        // Create new store - validate all required fields
+        if (!formData.store_url || !formData.consumer_key || !formData.consumer_secret) {
+          setError(t("settings.storeManager.requiredFields"));
+          setLoading(false);
+          return;
+        }
+        
         // Create
         const createData: StoreCreateRequest = {
           name: formData.name,
@@ -248,6 +280,7 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
           consumer_secret: formData.consumer_secret,
           wp_username: formData.wp_username || undefined,
           wp_app_password: formData.wp_app_password || undefined,
+          api_key: formData.api_key || undefined, // Include API key if provided
           set_as_active: formData.set_as_active,
         };
 
@@ -256,7 +289,7 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
           body: JSON.stringify(createData),
         });
 
-        setSuccess(`Đã tạo store "${profileName}" thành công`);
+        setSuccess(t("settings.storeManager.createSuccess", { name: profileName }));
       }
 
       // Reload stores và chọn profile vừa lưu (giống desktop app)
@@ -264,7 +297,7 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
       await handleProfileSelected(profileName);
       if (onStoreChange) onStoreChange();
     } catch (err: any) {
-      setError(`Failed to ${editingStore ? 'update' : 'create'} store: ${err.message}`);
+      setError(t("settings.storeManager.saveError", { action: editingStore ? 'update' : 'create', message: err.message }));
     } finally {
       setLoading(false);
     }
@@ -274,17 +307,17 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
   const handleDeleteProfile = async () => {
     const profileName = selectedProfileName.trim() || formData.name.trim();
     if (!profileName) {
-      setError('Không có cấu hình nào để xóa.');
+      setError(t("settings.storeManager.noConfigToDelete"));
       return;
     }
 
     const store = stores.find((s) => s.name === profileName);
     if (!store) {
-      setError('Không tìm thấy store để xóa.');
+      setError(t("settings.storeManager.storeNotFound"));
       return;
     }
 
-    if (!confirm(`Xóa cấu hình store "${profileName}"?`)) {
+    if (!confirm(t("settings.storeManager.deleteConfirmProfile", { name: profileName }))) {
       return;
     }
 
@@ -294,7 +327,7 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
       await apiFetch(endpoints.store(store.id), {
         method: 'DELETE',
       });
-      setSuccess(`Đã xóa cấu hình store "${profileName}" thành công`);
+      setSuccess(t("settings.storeManager.deleteSuccess", { name: profileName }));
 
       // Reload stores và chọn store đầu tiên hoặc active store (giống desktop app)
       await loadStores();
@@ -309,7 +342,7 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Quản lý Store Profiles</h2>
+        <h2 className="text-2xl font-bold">{t("settings.storeManager.title")}</h2>
         <button
           onClick={() => {
             resetForm();
@@ -317,7 +350,7 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
           }}
           className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
         >
-          + Tạo Store mới
+          {t("settings.storeManager.createNew")}
         </button>
       </div>
 
@@ -335,12 +368,12 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
 
       {/* Profile Selector (giống desktop app) */}
       <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-semibold mb-4">Cấu hình kết nối / Store profiles</h3>
+        <h3 className="text-lg font-semibold mb-4">{t("settings.storeManager.connectionConfig")}</h3>
 
         <div className="grid grid-cols-4 gap-4 mb-4">
           <div>
             <label className="block text-sm font-medium mb-1">
-              Store profile:
+              {t("settings.storeManager.profileLabel")}
             </label>
             <select
               value={selectedProfileName}
@@ -348,7 +381,7 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
               className="w-full p-2 border rounded"
               disabled={loading}
             >
-              <option value="">-- Chọn hoặc nhập tên mới --</option>
+              <option value="">{t("settings.storeManager.selectOrEnter")}</option>
               {stores.map((store) => (
                 <option key={store.id} value={store.name}>
                   {store.name} {store.is_active ? '(Active)' : ''}
@@ -368,7 +401,7 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
                   setEditingStore(null);
                 }
               }}
-              placeholder="Hoặc nhập tên store mới"
+              placeholder={t("settings.storeManager.orEnterNew")}
               className="w-full p-2 border rounded mt-2"
               disabled={loading}
             />
@@ -381,7 +414,7 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
               disabled={loading}
               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
             >
-              {editingStore ? 'Cập nhật' : 'Lưu cấu hình'}
+              {editingStore ? t("settings.storeManager.update") : t("settings.storeManager.saveConfig")}
             </button>
             <button
               type="button"
@@ -389,7 +422,7 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
               disabled={loading || !selectedProfileName}
               className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50"
             >
-              Xóa cấu hình
+              {t("settings.storeManager.deleteConfig")}
             </button>
           </div>
         </div>
@@ -398,7 +431,7 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
       {/* Form */}
       <form onSubmit={handleSaveProfile} className="bg-white p-6 rounded-lg shadow">
         <h3 className="text-lg font-semibold mb-4">
-          {editingStore ? 'Chỉnh sửa Store' : 'Tạo Store mới'}
+          {editingStore ? t("settings.storeManager.editStore") : t("settings.storeManager.createStore")}
         </h3>
 
         <div className="grid grid-cols-2 gap-4">
@@ -489,6 +522,39 @@ export function StoreManager({ onStoreChange }: StoreManagerProps) {
               className="w-full p-2 border rounded"
               disabled={loading}
             />
+          </div>
+
+          <div className="col-span-2">
+            <label className="block text-sm font-medium mb-1">
+              API Key (for authentication):
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={formData.api_key}
+                onChange={(e) => setFormData({ ...formData, api_key: e.target.value })}
+                className="flex-1 p-2 border rounded"
+                disabled={loading}
+                placeholder="Auto-generated if empty"
+              />
+              <button
+                type="button"
+                onClick={async () => {
+                  // Generate API key locally (64 hex chars)
+                  const newKey = Array.from(crypto.getRandomValues(new Uint8Array(32)))
+                    .map(b => b.toString(16).padStart(2, '0'))
+                    .join('');
+                  setFormData({ ...formData, api_key: newKey });
+                }}
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                disabled={loading}
+              >
+                Generate
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              API key is required for store authentication. Leave empty to auto-generate on save.
+            </p>
           </div>
         </div>
 

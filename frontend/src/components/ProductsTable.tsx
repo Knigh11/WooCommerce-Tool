@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { ProductSummary } from '../api/types';
 
 interface ProductsTableProps {
@@ -7,12 +8,14 @@ interface ProductsTableProps {
 }
 
 export function ProductsTable({ products, loading, onProductClick }: ProductsTableProps) {
+  const { t } = useTranslation();
+  
   if (loading) {
-    return <div className="text-center p-4">Loading products...</div>;
+    return <div className="text-center p-4">{t("products.loading")}</div>;
   }
 
   if (products.length === 0) {
-    return <div className="text-center p-4 text-gray-500">No products found</div>;
+    return <div className="text-center p-4 text-gray-500">{t("products.noProducts")}</div>;
   }
 
   return (
@@ -20,13 +23,13 @@ export function ProductsTable({ products, loading, onProductClick }: ProductsTab
       <table className="w-full border-collapse border">
         <thead>
           <tr className="bg-gray-100">
-            <th className="border p-2 text-left">Image</th>
-            <th className="border p-2 text-left">ID</th>
-            <th className="border p-2 text-left">Name</th>
-            <th className="border p-2 text-left">Type</th>
-            <th className="border p-2 text-left">Status</th>
-            <th className="border p-2 text-left">Price</th>
-            <th className="border p-2 text-left">Stock</th>
+            <th className="border p-2 text-left">{t("table.image")}</th>
+            <th className="border p-2 text-left">{t("table.id")}</th>
+            <th className="border p-2 text-left">{t("table.name")}</th>
+            <th className="border p-2 text-left">{t("table.type")}</th>
+            <th className="border p-2 text-left">{t("table.status")}</th>
+            <th className="border p-2 text-left">{t("table.price")}</th>
+            <th className="border p-2 text-left">{t("table.stock")}</th>
           </tr>
         </thead>
         <tbody>
@@ -48,7 +51,7 @@ export function ProductsTable({ products, loading, onProductClick }: ProductsTab
                   />
                 ) : (
                   <div className="w-16 h-16 bg-gray-200 flex items-center justify-center text-xs text-gray-500">
-                    No image
+                    {t("table.noImage")}
                   </div>
                 )}
               </td>
@@ -62,8 +65,8 @@ export function ProductsTable({ products, loading, onProductClick }: ProductsTab
                   {product.status}
                 </span>
               </td>
-              <td className="border p-2">{product.price || 'N/A'}</td>
-              <td className="border p-2">{product.stock_status || 'N/A'}</td>
+              <td className="border p-2">{product.price || t("table.na")}</td>
+              <td className="border p-2">{product.stock_status || t("table.na")}</td>
             </tr>
           ))}
         </tbody>

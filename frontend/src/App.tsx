@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react"
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
 import { AppShell } from "./components/app/AppShell"
 import { LoadingState } from "./components/common/LoadingState"
 
@@ -14,6 +14,11 @@ const Categories = lazy(() => import("./pages/Categories").then(m => ({ default:
 const Reviews = lazy(() => import("./pages/Reviews").then(m => ({ default: m.Reviews })))
 const Jobs = lazy(() => import("./pages/Jobs").then(m => ({ default: m.Jobs })))
 const Settings = lazy(() => import("./pages/Settings").then(m => ({ default: m.Settings })))
+const UpsellCombosV2 = lazy(() => import("./pages/UpsellCombosV2").then(m => ({ default: m.UpsellCombosV2 })))
+const BMSMRulesV2 = lazy(() => import("./pages/BMSMRulesV2").then(m => ({ default: m.BMSMRulesV2 })))
+const DescriptionBuilderPage = lazy(() => import("./pages/DescriptionBuilderPage").then(m => ({ default: m.DescriptionBuilderPage })))
+const Feeds = lazy(() => import("./pages/Feeds").then(m => ({ default: m.Feeds })))
+const CsvGenerator = lazy(() => import("./pages/CsvGenerator").then(m => ({ default: m.CsvGenerator })))
 
 // Helper wrapper to avoid repeating Suspense boilerplate
 const withSuspense = (element: React.ReactElement) => (
@@ -36,6 +41,13 @@ function App() {
           <Route path="reviews" element={withSuspense(<Reviews />)} />
           <Route path="jobs" element={withSuspense(<Jobs />)} />
           <Route path="settings" element={withSuspense(<Settings />)} />
+          <Route path="offers/fbt" element={withSuspense(<UpsellCombosV2 />)} />
+          <Route path="offers/bmsm" element={withSuspense(<BMSMRulesV2 />)} />
+          <Route path="offers/upsell-combos-v2" element={withSuspense(<UpsellCombosV2 />)} />
+          <Route path="offers/bmsm-rules-v2" element={withSuspense(<BMSMRulesV2 />)} />
+          <Route path="stores/:storeId/description-builder" element={withSuspense(<DescriptionBuilderPage />)} />
+          <Route path="feeds" element={withSuspense(<Feeds />)} />
+          <Route path="csv-generator" element={withSuspense(<CsvGenerator />)} />
         </Route>
       </Routes>
     </BrowserRouter>

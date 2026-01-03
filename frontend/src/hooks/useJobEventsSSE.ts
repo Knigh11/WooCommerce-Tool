@@ -55,7 +55,9 @@ export function useJobEventsSSE({
     }
 
     let reconnectTimeout: number | null = null
-    const sseUrl = endpoints.jobEvents(storeId, jobId)
+    // Get job token from job manager if available (reuse job variable from above)
+    const jobToken = job?.jobToken
+    const sseUrl = endpoints.jobEvents(storeId, jobId, jobToken)
 
     const connectSSE = () => {
       // Đóng connection cũ nếu có

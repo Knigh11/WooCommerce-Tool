@@ -172,7 +172,7 @@ async def create_delete_products_job(
         )
     
     try:
-        job_id = await state_manager.create_job(
+        job_id, job_token = await state_manager.create_job(
             store_id=store_id,
             job_type="delete-products",
             params={
@@ -202,7 +202,7 @@ async def create_delete_products_job(
         }
     )
     
-    return JobCreateResponse(job_id=job_id, status="queued")
+    return JobCreateResponse(job_id=job_id, job_token=job_token, status="queued")
 
 
 @router.post("/update-prices", response_model=JobCreateResponse)
@@ -225,7 +225,7 @@ async def create_update_prices_job(
     state_manager = JobStateManager(redis)
     
     try:
-        job_id = await state_manager.create_job(
+        job_id, job_token = await state_manager.create_job(
             store_id=store_id,
             job_type="update-prices",
             params={
@@ -257,7 +257,7 @@ async def create_update_prices_job(
         }
     )
     
-    return JobCreateResponse(job_id=job_id, status="queued")
+    return JobCreateResponse(job_id=job_id, job_token=job_token, status="queued")
 
 
 @router.post("/bulk-update-fields", response_model=JobCreateResponse)
@@ -270,7 +270,7 @@ async def create_bulk_update_fields_job(
     redis = await get_redis()
     state_manager = JobStateManager(redis)
     
-    job_id = await state_manager.create_job(
+    job_id, job_token = await state_manager.create_job(
         store_id=store_id,
         job_type="bulk-update-fields",
         params={
@@ -293,7 +293,7 @@ async def create_bulk_update_fields_job(
         }
     )
     
-    return JobCreateResponse(job_id=job_id, status="queued")
+    return JobCreateResponse(job_id=job_id, job_token=job_token, status="queued")
 
 
 @router.post("/bulk-update", response_model=JobCreateResponse)
@@ -357,7 +357,7 @@ async def create_bulk_update_job(
         }
         logger.info(f"Creating bulk-update job for store {store_id} with params: mode={request.mode}, update_title={request.update_title}, update_short_description={request.update_short_description}, update_description={request.update_description}")
         
-        job_id = await state_manager.create_job(
+        job_id, job_token = await state_manager.create_job(
             store_id=store_id,
             job_type="bulk-update",
             params=job_params
@@ -400,7 +400,7 @@ async def create_bulk_update_job(
     )
     
     logger.info(f"Bulk-update job {job_id} queued successfully")
-    return JobCreateResponse(job_id=job_id, status="queued")
+    return JobCreateResponse(job_id=job_id, job_token=job_token, status="queued")
 
 
 @router.post("/import-csv", response_model=JobCreateResponse)
@@ -422,7 +422,7 @@ async def create_csv_import_job(
     state_manager = JobStateManager(redis)
     
     try:
-        job_id = await state_manager.create_job(
+        job_id, job_token = await state_manager.create_job(
             store_id=store_id,
             job_type="csv-import",
             params={
@@ -452,7 +452,7 @@ async def create_csv_import_job(
         }
     )
     
-    return JobCreateResponse(job_id=job_id, status="queued")
+    return JobCreateResponse(job_id=job_id, job_token=job_token, status="queued")
 
 
 @router.get("/{job_id}", response_model=JobResponse)

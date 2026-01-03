@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { apiFetch } from '../api/client';
 import { endpoints } from '../api/endpoints';
 import { JobResponse, SSELogEvent, SSEProgressEvent, SSEStatusEvent } from '../api/types';
+import { useJobManager } from '../state/jobManager';
 import { LogsConsole } from './LogsConsole';
 
 interface JobMonitorProps {
@@ -11,6 +13,7 @@ interface JobMonitorProps {
 }
 
 export function JobMonitor({ storeId, jobId, onClose }: JobMonitorProps) {
+  const { t } = useTranslation();
   const [job, setJob] = useState<JobResponse | null>(null);
   const [logs, setLogs] = useState<SSELogEvent[]>([]);
   const [autoScroll, setAutoScroll] = useState(true);
@@ -22,6 +25,7 @@ export function JobMonitor({ storeId, jobId, onClose }: JobMonitorProps) {
   const pollingIntervalRef = useRef<number | null>(null);
   const eventCountRef = useRef(0);
   const eventCountStartRef = useRef(Date.now());
+  const { getJob: getJobFromManager } = useJobManager();
 
   // Polling fallback - chỉ dùng khi SSE không hoạt động
   useEffect(() => {
@@ -40,8 +44,8 @@ export function JobMonitor({ storeId, jobId, onClose }: JobMonitorProps) {
         if (err.status === 404) {
           // Job not found yet, might be still creating
           console.warn('Job not found yet, might be still creating');
-        } else if (err.status === 503) {
-          setSseError(`Redis unavailable: ${err.message}`);
+        } else         if (err.status === 503) {
+          setSseError(`${t("jobMonitor.redisUnavailable")}: ${err.message}`);
         } else {
           // Other errors - don't spam console, just log once
           if (!sseError || !sseError.includes('polling')) {
@@ -68,7 +72,10 @@ export function JobMonitor({ storeId, jobId, onClose }: JobMonitorProps) {
     if (job && ['done', 'failed', 'cancelled'].includes(job.status)) return; // Không kết nối SSE nếu job đã xong
 
     // EventSource needs absolute URL or relative path (Vite proxy handles it)
-    const sseUrl = endpoints.jobEvents(storeId, jobId);
+    // Get job token from job manager if available
+    const jobState = getJobFromManager(jobId);
+    const jobToken = jobState?.jobToken;
+    const sseUrl = endpoints.jobEvents(storeId, jobId, jobToken);
     const eventSource = new EventSource(sseUrl);
     eventSourceRef.current = eventSource;
 
@@ -88,17 +95,17 @@ export function JobMonitor({ storeId, jobId, onClose }: JobMonitorProps) {
       // Check readyState to determine error type
       if (eventSource.readyState === EventSource.CONNECTING) {
         // Still connecting, might be temporary
-        setSseError('SSE connecting...');
+        setSseError(t("jobMonitor.sseConnecting"));
       } else if (eventSource.readyState === EventSource.CLOSED) {
         // Connection closed - dừng SSE và để polling tiếp quản
         setSseConnected(false);
-        setSseError('SSE connection closed. Using polling fallback.');
+        setSseError(t("jobMonitor.sseConnectionClosed"));
         console.error('SSE connection closed:', err);
         eventSource.close();
       } else {
         // Other error
         setSseConnected(false);
-        setSseError('SSE connection error. Using polling fallback.');
+        setSseError(t("jobMonitor.sseConnectionClosed"));
         console.error('SSE error:', err);
       }
     };
@@ -239,7 +246,7 @@ export function JobMonitor({ storeId, jobId, onClose }: JobMonitorProps) {
       setIsPaused(true);
     } catch (err: any) {
       console.error('Failed to pause job:', err);
-      alert(`Failed to pause job: ${err.message}`);
+      alert(`${t("jobMonitor.failedToPause")}: ${err.message}`);
     }
   };
 
@@ -250,18 +257,18 @@ export function JobMonitor({ storeId, jobId, onClose }: JobMonitorProps) {
       setIsPaused(false);
     } catch (err: any) {
       console.error('Failed to resume job:', err);
-      alert(`Failed to resume job: ${err.message}`);
+      alert(`${t("jobMonitor.failedToResume")}: ${err.message}`);
     }
   };
 
   const handleStop = async () => {
     if (!storeId || !jobId) return;
-    if (!window.confirm('Bạn có chắc chắn muốn dừng job này?')) return;
+    if (!window.confirm(t("jobMonitor.confirmStop"))) return;
     try {
       await apiFetch(endpoints.stopJob(storeId, jobId), { method: 'POST' });
     } catch (err: any) {
       console.error('Failed to stop job:', err);
-      alert(`Failed to stop job: ${err.message}`);
+      alert(`${t("jobMonitor.failedToStop")}: ${err.message}`);
     }
   };
 
@@ -274,9 +281,9 @@ export function JobMonitor({ storeId, jobId, onClose }: JobMonitorProps) {
     <div className="border rounded p-4">
       <div className="flex justify-between items-start mb-4">
         <div>
-          <h3 className="text-lg font-bold">Job Monitor: {jobId.substring(0, 8)}...</h3>
+          <h3 className="text-lg font-bold">{t("jobMonitor.jobMonitor")}: {jobId.substring(0, 8)}...</h3>
           <div className="text-sm text-gray-600">
-            Status:{' '}
+            {t("jobMonitor.status")}:{' '}
             <span
               className={`font-bold ${job?.status === 'done'
                   ? 'text-green-600'
@@ -289,7 +296,7 @@ export function JobMonitor({ storeId, jobId, onClose }: JobMonitorProps) {
             >
               {job?.status || 'loading...'}
             </span>
-            {sseConnected && <span className="ml-4 text-green-600">● SSE Connected</span>}
+            {sseConnected && <span className="ml-4 text-green-600">● {t("jobMonitor.sseConnected")}</span>}
             {sseError && <span className="ml-4 text-yellow-600">⚠ {sseError}</span>}
             {eventsPerMinute > 0 && (
               <span className="ml-4 text-gray-500">({eventsPerMinute} events/min)</span>

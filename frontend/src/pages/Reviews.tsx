@@ -14,9 +14,9 @@ export function Reviews() {
       <PageHeader title={t("pages.reviews.title")} />
       <ReviewsComponent
         storeId={selectedStoreId}
-        onCreateJob={(jobId) => {
+        onCreateJob={(jobId, jobToken) => {
           if (selectedStoreId) {
-            addJob(jobId, selectedStoreId)
+            addJob(jobId, selectedStoreId, jobToken)
             openDrawer()
           }
         }}

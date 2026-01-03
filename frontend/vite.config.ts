@@ -119,6 +119,27 @@ export default defineConfig(({ mode }) => {
           target: apiBase,
           changeOrigin: true,
           secure: false,
+          ws: true, // Enable WebSocket proxying for SSE
+          configure: (proxy, _options) => {
+            proxy.on("error", (err, _req, res) => {
+              console.error("Proxy error:", err.message);
+              // Don't log every retry attempt to reduce noise
+            });
+            proxy.on("proxyReq", (proxyReq, req, _res) => {
+              // Only log non-category requests to reduce noise
+              // Don't use import.meta.env here as it's not available in Node context
+              if (req.url && !req.url.includes('/categories')) {
+                // Only log in verbose mode (can be controlled via env var if needed)
+                // For now, just log errors
+              }
+            });
+            proxy.on("proxyRes", (proxyRes, req, _res) => {
+              // Log errors but not successful requests
+              if (proxyRes.statusCode && proxyRes.statusCode >= 400) {
+                console.error(`Proxy response error: ${proxyRes.statusCode} for ${req.method} ${req.url}`);
+              }
+            });
+          },
         },
       },
     },

@@ -35,7 +35,10 @@ export const endpoints = {
   resumeJob: (storeId: string, jobId: string) => `/api/v1/stores/${storeId}/jobs/${jobId}/resume`,
   stopJob: (storeId: string, jobId: string) => `/api/v1/stores/${storeId}/jobs/${jobId}/stop`,
   cancelJob: (storeId: string, jobId: string) => `/api/v1/stores/${storeId}/jobs/${jobId}/cancel`,
-  jobEvents: (storeId: string, jobId: string) => `/api/v1/stores/${storeId}/jobs/${jobId}/events`,
+  jobEvents: (storeId: string, jobId: string, token?: string) => {
+    const base = `/api/v1/stores/${storeId}/jobs/${jobId}/events`
+    return token ? `${base}?token=${encodeURIComponent(token)}` : base
+  },
   
   // Reviews
   reviewsByUrls: (storeId: string) => `/api/v1/stores/${storeId}/reviews/by-urls`,
@@ -45,9 +48,62 @@ export const endpoints = {
   uploadReviewImages: (storeId: string, reviewId: number) => `/api/v1/stores/${storeId}/reviews/${reviewId}/images`,
   deleteReview: (storeId: string, reviewId: number) => `/api/v1/stores/${storeId}/reviews/${reviewId}`,
   
+  // Images
+  imageProxy: (params?: { u?: string; w?: number; h?: number }) => {
+    const url = '/api/v1/img/proxy'
+    const searchParams = new URLSearchParams()
+    if (params?.u) searchParams.set('u', params.u)
+    if (params?.w) searchParams.set('w', params.w.toString())
+    if (params?.h) searchParams.set('h', params.h.toString())
+    const query = searchParams.toString()
+    return query ? `${url}?${query}` : url
+  },
+  
   // Product Editor
   productEditorByUrl: (storeId: string) => `/api/v1/stores/${storeId}/products/editor/by-url`,
   productEditor: (storeId: string, productId: number) => `/api/v1/stores/${storeId}/products/editor/${productId}`,
   updateProductEditor: (storeId: string, productId: number) => `/api/v1/stores/${storeId}/products/editor/${productId}`,
   uploadProductImages: (storeId: string, productId: number) => `/api/v1/stores/${storeId}/products/editor/${productId}/images/upload`,
+  
+  // BMSM (Buy More Save More) - store_id in path
+  bmsmSearchProducts: (storeId: string) => `/api/v1/stores/${storeId}/bmsm/search-products`,
+  bmsmProductRules: (storeId: string, productId: number) => `/api/v1/stores/${storeId}/bmsm/products/${productId}/rules`,
+  bmsmUpdateProductRules: (storeId: string, productId: number) => `/api/v1/stores/${storeId}/bmsm/products/${productId}/rules`,
+  bmsmDisableProductRules: (storeId: string, productId: number) => `/api/v1/stores/${storeId}/bmsm/products/${productId}/rules/disable`,
+  bmsmClearProductRules: (storeId: string, productId: number) => `/api/v1/stores/${storeId}/bmsm/products/${productId}/rules`,
+  bmsmInventoryAll: (storeId: string, params?: { search?: string; filter_type?: string }) => {
+    const url = `/api/v1/stores/${storeId}/bmsm/inventory/all`;
+    const searchParams = new URLSearchParams();
+    if (params?.search) searchParams.set('search', params.search);
+    if (params?.filter_type) searchParams.set('filter_type', params.filter_type);
+    const query = searchParams.toString();
+    return query ? `${url}?${query}` : url;
+  },
+  bmsmInventory: (storeId: string) => `/api/v1/stores/${storeId}/bmsm/inventory`,
+  bmsmTestConnection: (storeId: string) => `/api/v1/stores/${storeId}/bmsm/test-connection`,
+  
+  // FBT Combos - store_id in path
+  fbtCombosAll: (storeId: string, params?: { search?: string }) => {
+    const url = `/api/v1/stores/${storeId}/fbt-combos/all`;
+    const searchParams = new URLSearchParams();
+    if (params?.search) searchParams.set('search', params.search);
+    const query = searchParams.toString();
+    return query ? `${url}?${query}` : url;
+  },
+  fbtCombos: (storeId: string, params?: { search?: string; page?: number; per_page?: number }) => {
+    const url = `/api/v1/stores/${storeId}/fbt-combos`;
+    const searchParams = new URLSearchParams();
+    if (params?.search) searchParams.set('search', params.search);
+    if (params?.page) searchParams.set('page', params.page.toString());
+    if (params?.per_page) searchParams.set('per_page', params.per_page.toString());
+    const query = searchParams.toString();
+    return query ? `${url}?${query}` : url;
+  },
+  fbtCombo: (storeId: string, mainId: number) => `/api/v1/stores/${storeId}/fbt-combos/${mainId}`,
+  fbtCombosCreate: (storeId: string) => `/api/v1/stores/${storeId}/fbt-combos`,
+  fbtCombosUpdate: (storeId: string, mainId: number) => `/api/v1/stores/${storeId}/fbt-combos/${mainId}`,
+  fbtCombosDelete: (storeId: string, mainId: number) => `/api/v1/stores/${storeId}/fbt-combos/${mainId}`,
+  fbtSearchProducts: (storeId: string) => `/api/v1/stores/${storeId}/fbt-combos/search-products`,
+  fbtResolve: (storeId: string) => `/api/v1/stores/${storeId}/fbt-combos/resolve`,
+  fbtTestConnection: (storeId: string) => `/api/v1/stores/${storeId}/fbt-combos/test-connection`,
 };

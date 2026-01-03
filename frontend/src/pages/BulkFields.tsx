@@ -14,9 +14,9 @@ export function BulkFields() {
       <PageHeader title={t("pages.bulkFields.title")} />
       <BulkUpdateProducts
         storeId={selectedStoreId}
-        onCreateJob={(jobId) => {
+        onCreateJob={(jobId, jobToken) => {
           if (selectedStoreId) {
-            addJob(jobId, selectedStoreId)
+            addJob(jobId, selectedStoreId, jobToken)
             openDrawer()
           }
         }}

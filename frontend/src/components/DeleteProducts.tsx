@@ -6,7 +6,7 @@ import { CategorySelector } from './CategorySelector';
 
 interface DeleteProductsProps {
   storeId: string | null;
-  onCreateJob: (jobId: string) => void;
+  onCreateJob: (jobId: string, jobToken?: string) => void;
 }
 
 export function DeleteProducts({ storeId, onCreateJob }: DeleteProductsProps) {

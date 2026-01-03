@@ -32,7 +32,7 @@ export function getAverageTiming(endpoint: string): number {
 
 export async function apiFetch<T>(
   endpoint: string,
-  options?: RequestInit
+  options?: RequestInit & { storeId?: string }
 ): Promise<{ data: T; timing: ApiTiming }> {
   const start = performance.now();
   // Use relative path (via proxy) in dev, or absolute URL if API_BASE is set
@@ -43,6 +43,23 @@ export async function apiFetch<T>(
       : `${API_BASE}${endpoint}`;  // Use absolute URL in production
   
   try {
+    // Get store API key if storeId is provided
+    // Try to extract storeId from endpoint if not provided
+    let storeId = options?.storeId
+    if (!storeId) {
+      // Try to extract from endpoint pattern: /stores/{storeId}/...
+      const match = endpoint.match(/\/stores\/([^\/]+)/)
+      if (match) {
+        storeId = match[1]
+      }
+    }
+    
+    let storeKey: string | null = null
+    if (storeId) {
+      const { getStoreApiKey } = await import("../utils/storeKey")
+      storeKey = getStoreApiKey(storeId)
+    }
+    
     // Don't set Content-Type for FormData - browser will set it automatically with boundary
     const isFormData = options?.body instanceof FormData;
     const headers: HeadersInit = isFormData
@@ -51,6 +68,21 @@ export async function apiFetch<T>(
           'Content-Type': 'application/json',
           ...options?.headers,
         };
+    
+    // Add X-Store-Key header if available (only if key exists, don't send empty header)
+    if (storeKey && storeKey.trim()) {
+      headers['X-Store-Key'] = storeKey
+    }
+    
+    // Add X-Client-Session header for multi-user safety (if not already set)
+    if (!headers['X-Client-Session']) {
+      try {
+        const { getClientSession } = await import("../utils/clientSession")
+        headers['X-Client-Session'] = getClientSession()
+      } catch {
+        // Ignore if clientSession helper not available
+      }
+    }
     
     const response = await fetch(url, {
       ...options,
@@ -63,14 +95,18 @@ export async function apiFetch<T>(
     if (!response.ok) {
       const errorText = await response.text();
       let errorMessage = `API Error ${response.status}`;
+      let errorCode: string | null = null;
       try {
         const errorJson = JSON.parse(errorText);
         errorMessage = errorJson.detail || errorJson.message || errorMessage;
+        errorCode = errorJson.code || response.headers.get("X-Error-Code");
       } catch {
         errorMessage = errorText || errorMessage;
+        errorCode = response.headers.get("X-Error-Code");
       }
       const error = new Error(errorMessage);
       (error as any).status = response.status;
+      (error as any).code = errorCode;
       throw error;
     }
 

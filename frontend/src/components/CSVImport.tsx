@@ -9,7 +9,7 @@ import { CategorySelector } from './CategorySelector';
 
 interface CSVImportProps {
   storeId: string | null;
-  onCreateJob?: (jobId: string) => void;
+  onCreateJob?: (jobId: string, jobToken?: string) => void;
 }
 
 export function CSVImport({ storeId, onCreateJob }: CSVImportProps) {
@@ -60,7 +60,7 @@ export function CSVImport({ storeId, onCreateJob }: CSVImportProps) {
 
           if (onCreateJob) {
             const jobData = data as { job_id: string };
-            onCreateJob(jobData.job_id);
+            onCreateJob(jobData.job_id, jobData.job_token);
           }
           setLoading(false);
         } catch (err: any) {

@@ -81,7 +81,7 @@ export function JobDrawer() {
       updateJob(jobId, { status: "cancelled" })
       toast.success(t("job.cancel"))
     } catch (err: any) {
-      toast.error(err.message || "Failed to cancel job")
+      toast.error(err.message || t("jobMonitor.failedToCancel"))
     }
   }
 
@@ -90,7 +90,7 @@ export function JobDrawer() {
       await apiFetch(endpoints.pauseJob(storeId, jobId), { method: "POST" })
       toast.success(t("job.pause"))
     } catch (err: any) {
-      toast.error(err.message || "Failed to pause job")
+      toast.error(err.message || t("jobMonitor.failedToPause"))
     }
   }
 
@@ -101,7 +101,7 @@ export function JobDrawer() {
       updateJob(jobId, { status: "cancelled" })
       toast.success(t("job.stop"))
     } catch (err: any) {
-      toast.error(err.message || "Failed to stop job")
+      toast.error(err.message || t("jobMonitor.failedToStop"))
     }
   }
 
@@ -221,7 +221,7 @@ export function JobDrawer() {
                       <CardHeader>
                         <div className="flex items-center justify-between">
                           <CardTitle>
-                            Job: {selectedJob.jobId.substring(0, 16)}...
+                            {t("job.title")}: {selectedJob.jobId.substring(0, 16)}...
                           </CardTitle>
                           <div className="flex items-center gap-2">
                             <span
@@ -270,9 +270,9 @@ export function JobDrawer() {
                             selectedJob.current.action) && (
                             <div className="p-2 bg-muted rounded text-sm">
                               <strong>{t("job.current")}:</strong>{" "}
-                              {selectedJob.current.action || "Processing"}{" "}
+                              {selectedJob.current.action || t("job.processing")}{" "}
                               {selectedJob.current.product_id &&
-                                `Product ${selectedJob.current.product_id}`}
+                                `${t("logs.product")} ${selectedJob.current.product_id}`}
                             </div>
                           )}
 

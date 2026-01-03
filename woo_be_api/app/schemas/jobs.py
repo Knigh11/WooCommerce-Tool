@@ -88,5 +88,6 @@ class JobResponse(BaseModel):
 class JobCreateResponse(BaseModel):
     """Job creation response."""
     job_id: str
+    job_token: str
     status: str = "queued"
 

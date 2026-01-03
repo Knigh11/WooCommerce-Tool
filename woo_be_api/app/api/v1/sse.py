@@ -1,8 +1,8 @@
 """
-Server-Sent Events (SSE) endpoint for job events.
+Server-Sent Events (SSE) endpoint for job events - Multi-user safe with token gating.
 """
 
-from fastapi import APIRouter, Request, HTTPException, status, Header
+from fastapi import APIRouter, Request, HTTPException, status, Header, Query
 from fastapi.responses import StreamingResponse
 from typing import Optional
 
@@ -12,17 +12,17 @@ from app.core.events import stream_job_events, JobStateManager
 router = APIRouter()
 
 
-@router.get("")
-async def stream_events(
+async def _stream_events_impl(
     store_id: str,
     job_id: str,
+    token: str,
     request: Request,
-    last_event_id: Optional[str] = Header(None, alias="Last-Event-ID")
+    last_event_id: Optional[str] = None,
+    store_key: Optional[str] = None
 ):
     """
-    Stream job events via Server-Sent Events (SSE).
-    
-    Supports Last-Event-ID header for resuming from a specific event.
+    Internal implementation for streaming job events.
+    Requires token verification. X-Store-Key is optional if token is valid.
     """
     try:
         redis = await get_redis()
@@ -45,6 +45,33 @@ async def stream_events(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Job {job_id} not found"
             )
+        
+        # Verify token (mandatory)
+        if not token:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Missing job token",
+                headers={"X-Error-Code": "missing_job_token"}
+            )
+        
+        if not await state_manager.verify_job_token(job_id, token):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Invalid job token",
+                headers={"X-Error-Code": "invalid_job_token"}
+            )
+        
+        # X-Store-Key is optional for SSE if token is valid
+        # But if provided, verify it matches
+        if store_key:
+            from app.core.auth import verify_store_key
+            try:
+                await verify_store_key(store_id, store_key)
+            except HTTPException:
+                # If key is provided but invalid, still allow if token is valid
+                # This allows SSE to work without headers
+                pass
+        
     except HTTPException:
         raise
     except Exception as e:
@@ -56,11 +83,24 @@ async def stream_events(
     # Determine starting point
     start_id = last_event_id if last_event_id else "$"
     
+    # Get current job state for snapshot
+    current_state = await state_manager.get_job_state(job_id)
+    
     async def event_generator():
         """Generate SSE events."""
         try:
             # Send initial connection event
             yield f"event: connected\ndata: {{\"job_id\": \"{job_id}\"}}\n\n"
+            
+            # Send snapshot event with current state
+            if current_state:
+                import json
+                snapshot_data = {
+                    "status": current_state.get("status", "unknown"),
+                    "done": current_state.get("progress", {}).get("done", 0) if isinstance(current_state.get("progress"), dict) else 0,
+                    "total": current_state.get("progress", {}).get("total", 0) if isinstance(current_state.get("progress"), dict) else 0
+                }
+                yield f"event: snapshot\ndata: {json.dumps(snapshot_data)}\n\n"
             
             async for event in stream_job_events(redis, job_id, start_id):
                 # Check if client disconnected
@@ -101,3 +141,49 @@ async def stream_events(
         }
     )
 
+
+@router.get("")
+async def stream_events(
+    store_id: str,
+    job_id: str,
+    token: str = Query(..., description="Job token"),
+    request: Request = None,
+    last_event_id: Optional[str] = Header(None, alias="Last-Event-ID"),
+    x_store_key: Optional[str] = Header(None, alias="X-Store-Key")
+):
+    """
+    Stream job events via Server-Sent Events (SSE).
+    Token is mandatory. X-Store-Key is optional (token provides security).
+    
+    Supports Last-Event-ID header for resuming from a specific event.
+    Path: /stores/{store_id}/jobs/{job_id}/events?token=JOB_TOKEN
+    """
+    if request is None:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Request object not available"
+        )
+    return await _stream_events_impl(store_id, job_id, token, request, last_event_id, x_store_key)
+
+
+# Export function for use in router (query param version)
+async def stream_events_query(
+    store_id: str,
+    job_id: str = Query(..., description="Job ID"),
+    token: str = Query(..., description="Job token"),
+    request: Request = None,
+    last_event_id: Optional[str] = Header(None, alias="Last-Event-ID"),
+    x_store_key: Optional[str] = Header(None, alias="X-Store-Key")
+):
+    """
+    Stream job events via Server-Sent Events (SSE) - query param version.
+    Token is mandatory. X-Store-Key is optional (token provides security).
+    
+    Path: /stores/{store_id}/sse?job_id={job_id}&token=JOB_TOKEN
+    """
+    if request is None:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Request object not available"
+        )
+    return await _stream_events_impl(store_id, job_id, token, request, last_event_id, x_store_key)

@@ -10,7 +10,7 @@ import { CategorySelector } from './CategorySelector';
 
 interface BulkUpdateProductsProps {
   storeId: string | null;
-  onCreateJob?: (jobId: string) => void;
+  onCreateJob?: (jobId: string, jobToken?: string) => void;
 }
 
 export function BulkUpdateProducts({ storeId, onCreateJob }: BulkUpdateProductsProps) {
@@ -137,7 +137,7 @@ export function BulkUpdateProducts({ storeId, onCreateJob }: BulkUpdateProductsP
           'job_id' in data &&
           typeof (data as any).job_id !== 'undefined'
         ) {
-          onCreateJob((data as any).job_id);
+          onCreateJob((data as any).job_id, (data as any).job_token);
         } else {
           setError('Phản hồi không hợp lệ từ máy chủ');
         }

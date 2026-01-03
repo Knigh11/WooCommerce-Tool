@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
-import { CategoryNode } from '../api/types';
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { apiFetch } from '../api/client';
 import { endpoints } from '../api/endpoints';
+import { CategoryNode } from '../api/types';
 
 interface CategorySelectorProps {
   storeId: string | null;
@@ -18,6 +19,7 @@ export function CategorySelector({
   showAllOption = true,
   height = 15,
 }: CategorySelectorProps) {
+  const { t } = useTranslation();
   const [categories, setCategories] = useState<CategoryNode[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,11 +36,12 @@ export function CategorySelector({
       setError(null);
       try {
         const { data } = await apiFetch<{ tree: CategoryNode[]; flattened: CategoryNode[] }>(
-          endpoints.categories(storeId)
+          endpoints.categories(storeId),
+          { storeId } // Pass storeId to ensure X-Store-Key is included if available
         );
         setCategories(data.flattened || []);
       } catch (err: any) {
-        setError(err.message || 'Failed to load categories');
+        setError(err.message || t("categories.failedToLoad"));
       } finally {
         setLoading(false);
       }
@@ -67,7 +70,7 @@ export function CategorySelector({
   if (!storeId) {
     return (
       <div className="border rounded p-4 text-gray-500 text-center">
-        Please select a store first
+        {t("categories.selectStoreFirst")}
       </div>
     );
   }
@@ -75,7 +78,7 @@ export function CategorySelector({
   if (loading) {
     return (
       <div className="border rounded p-4 text-center">
-        <div className="text-gray-500">Loading categories...</div>
+        <div className="text-gray-500">{t("categories.loading")}</div>
       </div>
     );
   }
@@ -83,7 +86,7 @@ export function CategorySelector({
   if (error) {
     return (
       <div className="border rounded p-4 bg-red-50 text-red-700">
-        Error: {error}
+        {t("categories.error")}: {error}
       </div>
     );
   }
@@ -93,7 +96,7 @@ export function CategorySelector({
       <div className="p-2 border-b">
         <input
           type="text"
-          placeholder="Search categories..."
+          placeholder={t("categories.searchPlaceholder")}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full p-2 border rounded"
@@ -110,11 +113,11 @@ export function CategorySelector({
             }`}
             onClick={() => handleSelect(null)}
           >
-            <strong>📁 TẤT CẢ Categories</strong>
+            <strong>{t("categories.allCategories")}</strong>
           </div>
         )}
         {filteredCategories.length === 0 ? (
-          <div className="p-4 text-center text-gray-500">No categories found</div>
+          <div className="p-4 text-center text-gray-500">{t("categories.noCategories")}</div>
         ) : (
           filteredCategories.map((cat) => (
             <div

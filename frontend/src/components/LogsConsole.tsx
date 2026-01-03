@@ -1,5 +1,6 @@
-import { SSELogEvent } from '../api/types';
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import { SSELogEvent } from '../api/types';
 
 interface LogsConsoleProps {
   logs: SSELogEvent[];
@@ -8,6 +9,7 @@ interface LogsConsoleProps {
 }
 
 export function LogsConsole({ logs, autoScroll, onToggleAutoScroll }: LogsConsoleProps) {
+  const { t } = useTranslation();
   const logEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -19,7 +21,7 @@ export function LogsConsole({ logs, autoScroll, onToggleAutoScroll }: LogsConsol
   return (
     <div className="border rounded">
       <div className="bg-gray-100 p-2 flex justify-between items-center">
-        <h4 className="font-medium">Logs ({logs.length})</h4>
+        <h4 className="font-medium">{t("logs.title")} ({logs.length})</h4>
         <label className="flex items-center text-sm">
           <input
             type="checkbox"
@@ -27,12 +29,12 @@ export function LogsConsole({ logs, autoScroll, onToggleAutoScroll }: LogsConsol
             onChange={onToggleAutoScroll}
             className="mr-2"
           />
-          Auto-scroll
+          {t("logs.autoScroll")}
         </label>
       </div>
       <div className="h-64 overflow-y-auto p-2 font-mono text-xs bg-black text-green-400">
         {logs.length === 0 ? (
-          <div className="text-gray-500">No logs yet...</div>
+          <div className="text-gray-500">{t("logs.noLogs")}</div>
         ) : (
           logs.map((log, idx) => (
             <div key={idx} className="mb-1">
@@ -45,7 +47,7 @@ export function LogsConsole({ logs, autoScroll, onToggleAutoScroll }: LogsConsol
               }>
                 [{log.level}]
               </span>{' '}
-              {log.product_id && <span className="text-blue-400">[Product {log.product_id}]</span>}{' '}
+              {log.product_id && <span className="text-blue-400">[{t("logs.product")} {log.product_id}]</span>}{' '}
               <span>{log.msg}</span>
             </div>
           ))
