@@ -217,3 +217,62 @@ def get_settings() -> Settings:
     """Get application settings."""
     return _settings
 
+
+def get_store_display_name(store_id: str, config_path: Optional[str] = None) -> str:
+    """
+    Get human-readable display name for a store from config.
+    
+    Fallback order:
+    1. Display name from stores dict (key matching store_id)
+    2. Active store name if it matches
+    3. Store URL hostname (from matching store config)
+    4. store_id (last resort)
+    
+    Args:
+        store_id: Store ID (slug)
+        config_path: Optional path to config file
+    
+    Returns:
+        Display name string
+    """
+    try:
+        config = load_stores_config(config_path)
+        stores = config.get("stores", {})
+        
+        # Try to find by matching generated store_id
+        matched_store_name = None
+        matched_store_config = None
+        for store_name, store_config in stores.items():
+            if generate_store_id(store_name) == store_id:
+                matched_store_name = store_name
+                matched_store_config = store_config
+                break
+        
+        if matched_store_name:
+            return matched_store_name
+        
+        # Check if active store matches
+        active = config.get("active")
+        if active and generate_store_id(active) == store_id:
+            return active
+        
+        # Try to get hostname from store URL (if we found a match earlier but name was empty)
+        if matched_store_config:
+            store_url = matched_store_config.get("store_url", "")
+            if store_url:
+                try:
+                    from urllib.parse import urlparse
+                    parsed = urlparse(store_url)
+                    hostname = parsed.netloc or parsed.path
+                    if hostname:
+                        # Remove port if present
+                        hostname = hostname.split(':')[0]
+                        return hostname
+                except Exception:
+                    pass
+        
+        # Last resort: return store_id
+        return store_id
+    except Exception:
+        # If anything fails, return store_id as safe fallback
+        return store_id

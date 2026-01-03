@@ -11,6 +11,7 @@ from fastapi import APIRouter, HTTPException, status, BackgroundTasks, Header, D
 from fastapi.responses import FileResponse, StreamingResponse
 
 from app.deps import get_woo_client_for_store, get_redis, get_store_by_id
+from app.config import get_store_display_name
 from app.core.woo_client import WooClient
 from app.core.events import JobEventEmitter, JobStateManager
 from app.core.feed.service import generate_feed
@@ -113,7 +114,8 @@ def _build_feed_config(
     store_url = store_config.get("store_url", "")
     consumer_key = store_config.get("consumer_key", "")
     consumer_secret = store_config.get("consumer_secret", "")
-    store_name = store_config.get("store_name", store_id)
+    # Get display name from config (prefer "name" field, fallback to helper function)
+    store_name = store_config.get("name") or get_store_display_name(store_id)
     
     # Build filters
     woocommerce_category_id = request.filters.category_id
@@ -197,11 +199,18 @@ async def _run_feed_job_task(
         # Get channel from config
         channel = config_dict.get('channel', 'gmc')
         
+        # Get display name (prefer from store_config, fallback to config_dict, then helper)
+        store_display_name = (
+            store_config.get("name") or 
+            config_dict.get('store_name') or 
+            get_store_display_name(store_id)
+        )
+        
         feed_config = FeedConfig(
             store_url=config_dict['store_url'],
             consumer_key=config_dict['consumer_key'],
             consumer_secret=config_dict['consumer_secret'],
-            store_name=config_dict['store_name'],
+            store_name=store_display_name,
             woocommerce_category_id=config_dict.get('woocommerce_category_id'),
             product_limit=config_dict.get('product_limit', 0),
             after_date=config_dict.get('after_date'),

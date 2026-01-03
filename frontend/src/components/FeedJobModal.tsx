@@ -1,9 +1,9 @@
+import { Download } from "lucide-react"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Download } from "lucide-react"
-import { useFeedJob } from "../hooks/useFeeds"
-import { useFeedJobEventsSSE } from "../hooks/useFeedJobEventsSSE"
 import { getFeedDownloadUrl } from "../api/v2/feeds"
+import { useFeedJobEventsSSE } from "../hooks/useFeedJobEventsSSE"
+import { useFeedJob } from "../hooks/useFeeds"
 import { getClientSession } from "../utils/clientSession"
 import { getStoreApiKey } from "../utils/storeKey"
 import { JobLogConsole } from "./app/JobLogConsole"
@@ -36,7 +36,7 @@ export function FeedJobModal({
 
   // Use provided token or try to extract from job's sse_url if available
   const effectiveToken = token || (job?.outputs ? undefined : undefined) // Token should come from props
-  
+
   const { status: sseStatus, progress: sseProgress, logs: sseLogs, connected } =
     useFeedJobEventsSSE({
       storeId,
@@ -89,12 +89,15 @@ export function FeedJobModal({
       const a = document.createElement("a")
       a.href = url
 
+      // Extract filename from Content-Disposition header or fallback to job outputs
+      const { extractFilenameFromContentDisposition, normalizeXmlFilename } = await import("../utils/filename")
       const contentDisposition = response.headers.get("content-disposition")
       let filename = "feed.xml"
+
       if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename="?(.+)"?/i)
-        if (filenameMatch) {
-          filename = filenameMatch[1]
+        const extracted = extractFilenameFromContentDisposition(contentDisposition)
+        if (extracted) {
+          filename = extracted
         }
       } else if (job?.outputs?.xml_filename) {
         filename = job.outputs.xml_filename
@@ -102,7 +105,8 @@ export function FeedJobModal({
         filename = job.outputs.zip_filename
       }
 
-      a.download = filename
+      // Normalize filename to ensure it ends with .xml and is Chrome-safe
+      a.download = normalizeXmlFilename(filename)
       document.body.appendChild(a)
       a.click()
       window.URL.revokeObjectURL(url)

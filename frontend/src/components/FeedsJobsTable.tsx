@@ -1,15 +1,16 @@
+import { Download, Eye } from "lucide-react"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Download, Eye } from "lucide-react"
+import { FeedJobDetail, getFeedDownloadUrl } from "../api/v2/feeds"
 import { useFeedJobs } from "../hooks/useFeeds"
-import { FeedJobDetail } from "../api/v2/feeds"
-import { getFeedDownloadUrl } from "../api/v2/feeds"
 import { getClientSession } from "../utils/clientSession"
 import { getStoreApiKey } from "../utils/storeKey"
+import { EmptyState } from "./common/EmptyState"
 import { Badge } from "./ui/badge"
 import { Button } from "./ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Input } from "./ui/input"
+import { Skeleton } from "./ui/skeleton"
 import {
   Table,
   TableBody,
@@ -18,8 +19,6 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table"
-import { Skeleton } from "./ui/skeleton"
-import { EmptyState } from "./common/EmptyState"
 
 interface FeedsJobsTableProps {
   storeId: string | null
@@ -79,13 +78,15 @@ export function FeedsJobsTable({
       const a = document.createElement("a")
       a.href = url
 
-      // Get filename from response headers or use default
+      // Extract filename from Content-Disposition header or fallback to job outputs
+      const { extractFilenameFromContentDisposition, normalizeXmlFilename } = await import("../utils/filename")
       const contentDisposition = response.headers.get("content-disposition")
       let filename = "feed.xml"
+
       if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename="?(.+)"?/i)
-        if (filenameMatch) {
-          filename = filenameMatch[1]
+        const extracted = extractFilenameFromContentDisposition(contentDisposition)
+        if (extracted) {
+          filename = extracted
         }
       } else if (job.outputs?.xml_filename) {
         filename = job.outputs.xml_filename
@@ -93,7 +94,8 @@ export function FeedsJobsTable({
         filename = job.outputs.zip_filename
       }
 
-      a.download = filename
+      // Normalize filename to ensure it ends with .xml and is Chrome-safe
+      a.download = normalizeXmlFilename(filename)
       document.body.appendChild(a)
       a.click()
       window.URL.revokeObjectURL(url)
@@ -163,55 +165,55 @@ export function FeedsJobsTable({
                 // Extract channel from job params if available
                 const jobParams = (job as any).params || {}
                 const channel = jobParams.channel || "-"
-                const channelDisplay = channel !== "-" 
+                const channelDisplay = channel !== "-"
                   ? t(`feeds.create.channel.${channel}`)
                   : "-"
-                
+
                 return (
-                <TableRow key={job.job_id}>
-                  <TableCell className="font-mono text-xs">
-                    {job.job_id.substring(0, 16)}...
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {channelDisplay}
-                  </TableCell>
-                  <TableCell>
-                    {job.created_at
-                      ? new Date(job.created_at).toLocaleString()
-                      : "-"}
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor(job.status)}>
-                      {t(`job.status.${job.status}`)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {job.outputs?.xml_filename || job.outputs?.zip_filename || "-"}
-                  </TableCell>
-                  <TableCell>{job.items_count || "-"}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onViewJob?.(job.job_id)}
-                      >
-                        <Eye className="h-4 w-4 mr-1" />
-                        {t("common.view")}
-                      </Button>
-                      {job.status === "done" && (
+                  <TableRow key={job.job_id}>
+                    <TableCell className="font-mono text-xs">
+                      {job.job_id.substring(0, 16)}...
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {channelDisplay}
+                    </TableCell>
+                    <TableCell>
+                      {job.created_at
+                        ? new Date(job.created_at).toLocaleString()
+                        : "-"}
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={getStatusColor(job.status)}>
+                        {t(`job.status.${job.status}`)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {job.outputs?.xml_filename || job.outputs?.zip_filename || "-"}
+                    </TableCell>
+                    <TableCell>{job.items_count || "-"}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDownload(job)}
+                          onClick={() => onViewJob?.(job.job_id)}
                         >
-                          <Download className="h-4 w-4 mr-1" />
-                          {t("feeds.modal.download")}
+                          <Eye className="h-4 w-4 mr-1" />
+                          {t("common.view")}
                         </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
+                        {job.status === "done" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDownload(job)}
+                          >
+                            <Download className="h-4 w-4 mr-1" />
+                            {t("feeds.modal.download")}
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
                 )
               })}
             </TableBody>
